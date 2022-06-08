@@ -27,6 +27,8 @@ import datasets
 import cmd_args 
 from main_utils import *
 
+from torch.utils.tensorboard import SummaryWriter   
+
 def main():
 
     if 'NUMBA_DISABLE_JIT' in os.environ:
@@ -42,7 +44,7 @@ def main():
     '''CREATE DIR'''
     experiment_dir = Path('./experiment/')
     experiment_dir.mkdir(exist_ok=True)
-    file_dir = Path(str(experiment_dir) + '/PointConv%sFlyingthings3d-'%args.model_name + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')))
+    file_dir = Path(str(experiment_dir) + '/semantic_kitti_non_ground_%s-'%args.model_name + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')))
     file_dir.mkdir(exist_ok=True)
     checkpoints_dir = file_dir.joinpath('checkpoints/')
     checkpoints_dir.mkdir(exist_ok=True)
@@ -67,15 +69,19 @@ def main():
 
     blue = lambda x: '\033[94m' + x + '\033[0m'
     model = PointConvSceneFlow()
+
+    tensorboard_dir=file_dir.joinpath('tensorboard/')
+    writer = SummaryWriter(tensorboard_dir)
+    
     ###################################################
     if args.dataset=='SemanticKitti': 
         transform=transforms.SemanticKittiProcessData(args.data_process,args.num_points)
-        train_dataset=datasets.SemanticKitti(train=True,transform=transform,num_points=args.num_points,data_root=args.data_root,use_all=True)
+        train_dataset=datasets.SemanticKitti(train=True,transform=transform,num_points=args.num_points,data_root=args.data_root,use_all=False)
         train_loader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,shuffle=True,num_workers=args.workers,pin_memory=True)
         logger.info('train_dataset: '+str(train_dataset))
 
         val_dataset=datasets.SemanticKitti(train=False,transform=transform,num_points=args.num_points,data_root=args.data_root)
-        val_data_loader=torch.utils.data.DataLoader(val_dataset,batch_size=args.batch_size,shuffle=False,num_workers=args.workers,pin_memory=True)
+        val_loader=torch.utils.data.DataLoader(val_dataset,batch_size=args.batch_size,shuffle=False,num_workers=args.workers,pin_memory=True)
         logger.info('val_dataset: '+str(val_dataset))
     ###########################################################
     else:
@@ -204,6 +210,14 @@ def main():
             print('Save model ...')
         print('Best epe loss is: %.5f'%(best_epe))
         logger.info('Best epe loss is: %.5f'%(best_epe))
+
+        # writer tensorboard
+        writer.add_scalar('train_loss',train_loss, epoch)
+        writer.add_scalar('total_loss',total_loss, epoch)
+        writer.add_scalar('total_seen',total_seen, epoch)
+        writer.add_scalar('eval_loss',eval_loss, epoch)
+        writer.add_scalar('eval_epe3d',eval_epe3d, epoch)
+        writer.add_scalar('best_epe',best_epe, epoch)
 
 
 def eval_sceneflow(model, loader):
