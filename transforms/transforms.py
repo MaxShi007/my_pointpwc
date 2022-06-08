@@ -314,9 +314,9 @@ class Augmentation(object):
         pc1 = pc1[sampled_indices1]
         pc2 = pc2[sampled_indices2]
         sf = sf[sampled_indices1]
-        print(type(pc1[0,0]))
-        print(pc1.shape)
-        print(pc1)
+        # print(type(pc1[0,0]))
+        # print(pc1.shape)
+        # print(pc1)
         # np.save('pc1.npy',pc1)
         # np.save('pc2.npy',pc2)
         # np.save('sf.npy',sf)

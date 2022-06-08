@@ -81,5 +81,5 @@ class SemanticKitti(Dataset):
 
 if __name__=='__main__':
     dataset=SemanticKitti(train=True,transform=transforms.SemanticKittiProcessData('random',8192),num_points=1024,data_root='/share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point',use_all=True)
-    dataset.getitem(0)
+    # dataset.getitem(0)
     
