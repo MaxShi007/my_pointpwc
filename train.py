@@ -5,6 +5,7 @@ Date: May 2020
 """
 
 import argparse
+import enum
 import sys 
 import os 
 
@@ -34,7 +35,9 @@ def main():
     global args 
     args = cmd_args.parse_args_from_yaml(sys.argv[1])
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu if args.multi_gpu is None else '0,1'
+    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu if args.multi_gpu is None else '0,1,2,3'
+    print(torch.cuda.is_available())
+    print(torch.cuda.device_count())
 
     '''CREATE DIR'''
     experiment_dir = Path('./experiment/')
@@ -64,44 +67,57 @@ def main():
 
     blue = lambda x: '\033[94m' + x + '\033[0m'
     model = PointConvSceneFlow()
+    ###################################################
+    if args.dataset=='SemanticKitti': 
+        transform=transforms.SemanticKittiProcessData(args.data_process,args.num_points)
+        train_dataset=datasets.SemanticKitti(train=True,transform=transform,num_points=args.num_points,data_root=args.data_root,use_all=True)
+        train_loader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,shuffle=True,num_workers=args.workers,pin_memory=True)
+        logger.info('train_dataset: '+str(train_dataset))
 
-    train_dataset = datasets.__dict__[args.dataset](
-        train=True,
-        transform=transforms.Augmentation(args.aug_together,
-                                            args.aug_pc2,
-                                            args.data_process,
-                                            args.num_points),
-        num_points=args.num_points,
-        data_root = args.data_root,
-        full=args.full
-    )
-    logger.info('train_dataset: ' + str(train_dataset))
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset,
-        batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=args.workers,
-        pin_memory=True,
-        worker_init_fn=lambda x: np.random.seed((torch.initial_seed()) % (2 ** 32))
-    )
+        val_dataset=datasets.SemanticKitti(train=False,transform=transform,num_points=args.num_points,data_root=args.data_root)
+        val_data_loader=torch.utils.data.DataLoader(val_dataset,batch_size=args.batch_size,shuffle=False,num_workers=args.workers,pin_memory=True)
+        logger.info('val_dataset: '+str(val_dataset))
+    ###########################################################
+    else:
 
-    val_dataset = datasets.__dict__[args.dataset](
-        train=False,
-        transform=transforms.ProcessData(args.data_process,
-                                         args.num_points,
-                                         args.allow_less_points),
-        num_points=args.num_points,
-        data_root = args.data_root
-    )
-    logger.info('val_dataset: ' + str(val_dataset))
-    val_loader = torch.utils.data.DataLoader(
-        val_dataset,
-        batch_size=args.batch_size,
-        shuffle=False,
-        num_workers=args.workers,
-        pin_memory=True,
-        worker_init_fn=lambda x: np.random.seed((torch.initial_seed()) % (2 ** 32))
-    )
+        train_dataset = datasets.__dict__[args.dataset](
+            train=True,
+            transform=transforms.Augmentation(args.aug_together,
+                                                args.aug_pc2,
+                                                args.data_process,
+                                                args.num_points),
+            num_points=args.num_points,
+            data_root = args.data_root,
+            full=args.full
+        )
+
+        logger.info('train_dataset: ' + str(train_dataset))
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset,
+            batch_size=args.batch_size,
+            shuffle=True,
+            num_workers=args.workers,
+            pin_memory=True,
+            worker_init_fn=lambda x: np.random.seed((torch.initial_seed()) % (2 ** 32))
+        )
+
+        val_dataset = datasets.__dict__[args.dataset](
+            train=False,
+            transform=transforms.ProcessData(args.data_process,
+                                            args.num_points,
+                                            args.allow_less_points),
+            num_points=args.num_points,
+            data_root = args.data_root
+        )
+        logger.info('val_dataset: ' + str(val_dataset))
+        val_loader = torch.utils.data.DataLoader(
+            val_dataset,
+            batch_size=args.batch_size,
+            shuffle=False,
+            num_workers=args.workers,
+            pin_memory=True,
+            worker_init_fn=lambda x: np.random.seed((torch.initial_seed()) % (2 ** 32))
+        )
 
     '''GPU selection and multi-GPU'''
     if args.multi_gpu is not None:

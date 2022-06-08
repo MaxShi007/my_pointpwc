@@ -2,6 +2,7 @@ import sys, os
 import os.path as osp
 import numpy as np
 import pptk
+from icecream import ic
 
 import torch.utils.data as data
 
@@ -94,10 +95,15 @@ class FlyingThings3DSubset(data.Dataset):
         """
         pc1 = np.load(osp.join(path, 'pc1.npy'))
         pc2 = np.load(osp.join(path, 'pc2.npy'))
+        # ic(pc1.shape,pc2.shape)
+        # np.save('pc1.npy',pc1)
+        # np.save('pc2.npy',pc2)
         # multiply -1 only for subset datasets
         pc1[..., -1] *= -1
         pc2[..., -1] *= -1
         pc1[..., 0] *= -1
         pc2[..., 0] *= -1
+        # np.save('pc1_trans.npy',pc1)
+        # np.save('pc2.trans.npy',pc2)
 
         return pc1, pc2

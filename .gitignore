@@ -7,3 +7,6 @@ pointnet2/dist
 pointnet2/pointnet2.egg-info
 Evaluate_experiment
 ft_experiment
+SAVE_PATH/
+.vscode/
+KITTI/

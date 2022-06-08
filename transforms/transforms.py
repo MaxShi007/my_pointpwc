@@ -19,7 +19,7 @@ import math
 import numpy as np
 import traceback
 import time
-
+from icecream import ic
 import torch
 
 import numba
@@ -190,6 +190,7 @@ class ProcessData(object):
         pc1 = pc1[sampled_indices1]
         sf = sf[sampled_indices1]
         pc2 = pc2[sampled_indices2]
+        # print(type(pc1[0]))
 
         return pc1, pc2, sf
 
@@ -262,6 +263,7 @@ class Augmentation(object):
 
         pc2[:, :3] = pc2[:, :3].dot(matrix2.T) + shifts2
         sf = pc2[:, :3] - pc1[:, :3]
+        
 
         if not self.no_corr:
             jitter2 = np.clip(self.pc2_args['jitter_sigma'] * np.random.randn(pc1.shape[0], 3),
@@ -312,6 +314,12 @@ class Augmentation(object):
         pc1 = pc1[sampled_indices1]
         pc2 = pc2[sampled_indices2]
         sf = sf[sampled_indices1]
+        print(type(pc1[0,0]))
+        print(pc1.shape)
+        print(pc1)
+        # np.save('pc1.npy',pc1)
+        # np.save('pc2.npy',pc2)
+        # np.save('sf.npy',sf)
 
         return pc1, pc2, sf
 
@@ -329,3 +337,48 @@ class Augmentation(object):
         format_string += '\tnum_points: {}\n'.format(self.num_points)
         format_string += ')'
         return format_string
+
+class SemanticKittiProcessData():
+    def __init__(self,data_process_args,num_points):
+        # self.down_sample_method = data_process_args['DOWN_SAMPLE_METHOD']
+        self.down_sample_method = 'random'
+        self.num_points = num_points
+
+        assert self.down_sample_method in ['random', 'voxel']
+        
+
+    def __call__(self, data) :
+        current_point,last_point,flow_gt=data
+        if self.num_points > 0:
+            if self.down_sample_method=='random':
+                current_sampled_indexs=np.random.choice(current_point.shape[0],size=self.num_points,replace=False,p=None)
+                last_sampled_indexs=np.random.choice(last_point.shape[0],size=self.num_points,replace=False,p=None)
+                flow_sampled_indexs=current_sampled_indexs
+
+                currnet_point=current_point[current_sampled_indexs]
+                last_point=last_point[last_sampled_indexs]
+                flow_gt=flow_gt[flow_sampled_indexs]
+
+                # np.save('ds_currnet_point.npy',currnet_point)
+                # np.save('ds_last_point.npy',last_point)
+                # np.save('ds_flow_gt.npy',flow_gt)
+            
+                
+            elif self.down_sample_method=='voxel':
+                #todo voxel dowm sample 
+                pass
+            
+
+        else:
+            #todo send all points
+            print('num_points<0, send all points to model, maybe not work !!!!!!!!!!!!!!!!')
+        # print(type(current_point[0,0]))
+        return currnet_point,last_point,flow_gt
+    
+    def __repr__(self):
+        format_string = self.__class__.__name__ + '\n(data_process_args: \n'
+        format_string += '\tdown_sample_method: {}\n'.format(self.down_sample_method)
+        format_string += '\tnum_points: {}\n'.format(self.num_points)
+        format_string += ')'
+        return format_string
+    

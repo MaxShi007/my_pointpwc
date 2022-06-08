@@ -1,16 +1,16 @@
 gpu: "0"
-multi_gpu: null
+multi_gpu: "0,1,2,3" # null
 
 model_name: PointConv
 
-full: False
+full: False 
 
 arch: PointConv
 last_relu: False
 allow_less_points: False
 
 # general args
-batch_size: 8
+batch_size: 20 # 6 single gpu for 18776 num_min_point
 epochs: 800
 learning_rate: 0.001
 
@@ -19,18 +19,19 @@ pretrain: null #./experiment/PointConvFlyingthings3d-2019-11-05_12-58/checkpoint
 weight_decay: 0.0001
 
 dim: 3
-num_points: 8192
+num_points: 18776 # 8192 16384 32768 # 18776 this is the min_num_point in semanticKitti non ground
 
 DEVICE: cuda
 
 evaluate: False
 
-dataset: FlyingThings3DSubset 
-data_root: ./flyingthings3d
+dataset: SemanticKitti # SemanticKitti #FlyingThings3DSubset # KITTI SemanticKitti
+data_root:  /share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point # /share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point #/root/sgb_repo/PointPWC/SAVE_PATH/ # ./flyingthings3d
 
 data_process:
   DEPTH_THRESHOLD: 35.
   NO_CORR: True
+  DOWN_SAMPLE_METHOD: random
 
 # data augmentation
 aug_together:
@@ -48,7 +49,7 @@ aug_pc2:
   jitter_clip: 0.00
 
 # miscalleneous
-workers: 16
+workers: 16 #16
 
 
 

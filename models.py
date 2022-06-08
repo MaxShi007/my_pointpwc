@@ -202,7 +202,7 @@ def multiScaleLoss(pred_flows, gt_flow, fps_idxs, alpha = [0.02, 0.04, 0.08, 0.1
 
     total_loss = torch.zeros(1).cuda()
     for i in range(num_scale):
-        diff_flow = pred_flows[i].permute(0, 2, 1) - gt_flows[i + offset]
+        diff_flow = pred_flows[i].permute(0, 2, 1) - gt_flows[i + offset] #pred_flows在cuda1，gt_flow在cuda0，所以多gpu跑不起来
         total_loss += alpha[i] * torch.norm(diff_flow, dim = 2).sum(dim = 1).mean()
 
     return total_loss
