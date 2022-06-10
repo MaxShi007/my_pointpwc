@@ -11,6 +11,7 @@ Scene Flow Estimation on Large-scale Point Clouds},
 }
 """
 
+from multiprocessing.managers import ValueProxy
 import os, sys
 import os.path as osp
 from collections import defaultdict
@@ -26,6 +27,8 @@ import numba
 from numba import njit
 
 from . import functional as F
+import open3d as o3d
+import time
 
 # ---------- BASIC operations ----------
 class Compose(object):
@@ -340,22 +343,42 @@ class Augmentation(object):
 
 class SemanticKittiProcessData():
     def __init__(self,data_process_args,num_points):
-        # self.down_sample_method = data_process_args['DOWN_SAMPLE_METHOD']
-        self.down_sample_method = 'random'
+        self.down_sample_method = data_process_args['DOWN_SAMPLE_METHOD']
+        # self.down_sample_method = 'random'
         self.num_points = num_points
+        self.voxel_choice=data_process_args['VOXEL_CHOICE']
+        self.voxel_size=data_process_args['VOXEL_SIZE']
 
         assert self.down_sample_method in ['random', 'voxel']
+        assert self.voxel_choice in ['choice one', 'mean']
+    
+    def down_sample(self,points,voxel_size):
+        '''
+        returns:
+            pc_ds_points: ndarray
+            pc_ds_index: [[]]
+        '''
+        pc=o3d.geometry.PointCloud()
+        pc.points=o3d.utility.Vector3dVector(points)
+        pc_min_bound = pc.get_min_bound()
+        pc_max_bound = pc.get_max_bound()
+        pc_ds=pc.voxel_down_sample_and_trace(voxel_size=voxel_size,min_bound=pc_min_bound,max_bound=pc_max_bound)
+        pc_ds_points=np.asarray(pc_ds[0].points)
+        pc_ds_index=[list(index) for index in pc_ds[2]]
         
+        return pc_ds_points,pc_ds_index
 
     def __call__(self, data) :
         current_point,last_point,flow_gt=data
         if self.num_points > 0:
             if self.down_sample_method=='random':
+                start=time.time()
                 current_sampled_indexs=np.random.choice(current_point.shape[0],size=self.num_points,replace=False,p=None)
                 last_sampled_indexs=np.random.choice(last_point.shape[0],size=self.num_points,replace=False,p=None)
                 flow_sampled_indexs=current_sampled_indexs
+                print('random sampling time:',time.time()-start)
 
-                currnet_point=current_point[current_sampled_indexs]
+                current_point=current_point[current_sampled_indexs]
                 last_point=last_point[last_sampled_indexs]
                 flow_gt=flow_gt[flow_sampled_indexs]
 
@@ -366,14 +389,39 @@ class SemanticKittiProcessData():
                 
             elif self.down_sample_method=='voxel':
                 #todo voxel dowm sample 
-                pass
+                # start1=time.time()
+                current_point_ds,current_point_ds_index=self.down_sample(current_point,self.voxel_size)              
+                last_point_ds,last_point_ds_index=self.down_sample(last_point,self.voxel_size)
+                # print(f'voxel downsample time: {time.time()-start1}')
+                if self.voxel_choice=='mean':
+                    current_point=current_point_ds
+                    last_point=last_point_ds
+
+                    # start2=time.time()# ! 太慢了，0.8s左右了
+                    flow_gt_ds=[np.mean(flow_gt[current_point_ds_index[i]],axis=0) for i in range(len(current_point_ds_index))]
+                    flow_gt=flow_gt_ds
+                    # print(f'flow_gt:{time.time()-start2}')
+
+                elif self.voxel_choice=='choice one':
+                    #todo
+
+                    pass
             
 
         else:
+            pass
             #todo send all points
             print('num_points<0, send all points to model, maybe not work !!!!!!!!!!!!!!!!')
+            current_sampled_indexs=np.random.choice(current_point.shape[0],size=100,replace=False,p=None)
+            last_sampled_indexs=np.random.choice(last_point.shape[0],size=120,replace=False,p=None)
+            flow_sampled_indexs=current_sampled_indexs
+
+            current_point=current_point[current_sampled_indexs]
+            last_point=last_point[last_sampled_indexs]
+            flow_gt=flow_gt[flow_sampled_indexs]
         # print(type(current_point[0,0]))
-        return currnet_point,last_point,flow_gt
+        
+        return current_point,last_point,flow_gt
     
     def __repr__(self):
         format_string = self.__class__.__name__ + '\n(data_process_args: \n'

@@ -2,6 +2,7 @@ import numpy as np
 from torch.utils.data import Dataset
 import glob
 import os
+import torch
 
 import sys 
 sys.path.append("/root/sgb_repo/PointPWC") 
@@ -73,7 +74,76 @@ class SemanticKitti(Dataset):
         fmt_str += '    Root Location: {}\n'.format(self.root)
         tmp = '    Transforms (if any): '
         fmt_str += '{0}{1}\n'.format(tmp, self.transform.__repr__().replace('\n', '\n' + ' ' * len(tmp)))
-        return fmt_str
+        return fmt_str  
+
+class Collater():
+    def __init__(self,data_process_args):
+        self.pat_method=data_process_args['PAD_METHOD'] 
+
+    def __call__(self,batch):
+        pos1, pos2, norm1, norm2, flow, path= zip(*batch)
+        batch_len=len(pos1)
+
+        max_pos1_len=max([len(x) for x in pos1])
+        max_pos2_len=max([len(x) for x in pos2])
+        max_norm1_len=max([len(x) for x in norm1])
+        max_norm2_len=max([len(x) for x in norm2])
+        max_flow_len=max([len(x) for x in flow])
+
+        pos1_pad=np.zeros((batch_len,max_pos1_len,3))
+        pos2_pad=np.zeros((batch_len,max_pos2_len,3))
+        norm1_pad=np.zeros((batch_len,max_norm1_len,3))
+        norm2_pad=np.zeros((batch_len,max_norm2_len,3))
+        flow_pad=np.zeros((batch_len,max_flow_len,3))
+
+        pos1_mask=np.zeros((batch_len,max_pos1_len))
+        pos2_mask=np.zeros((batch_len,max_pos2_len))
+        norm1_mask=np.zeros((batch_len,max_norm1_len))
+        norm2_mask=np.zeros((batch_len,max_norm2_len))
+        flow_mask=np.zeros((batch_len,max_flow_len))
+
+        for i in range(batch_len):
+            pos1_pad[i,:len(pos1[i]),:]=pos1[i]
+            pos2_pad[i,:len(pos2[i]),:]=pos2[i]
+            norm1_pad[i,:len(norm1[i]),:]=norm1[i]
+            norm2_pad[i,:len(norm2[i]),:]=norm2[i]
+            flow_pad[i,:len(flow[i]),:]=flow[i]
+
+            pos1_mask[i,:len(pos1[i])]=1
+            pos2_mask[i,:len(pos2[i])]=1
+            norm1_mask[i,:len(norm1[i])]=1
+            norm2_mask[i,:len(norm2[i])]=1
+            flow_mask[i,:len(flow[i])]=1
+
+            # todo sample padding
+            # if self.pat_method=='sample':
+            #     pos1_residual=max_pos1_len-len(pos1[i])
+            #     pos2_residual=max_pos2_len-len(pos2[i])
+            #     norm1_residual=max_norm1_len-len(norm1[i])
+            #     norm2_residual=max_norm2_len-len(norm2[i])
+            #     flow_residual=max_flow_len-len(flow[i])
+
+
+
+
+        pos1=torch.as_tensor(pos1_pad.astype('float32'))
+        pos2=torch.as_tensor(pos2_pad.astype('float32'))
+        norm1=torch.as_tensor(norm1_pad.astype('float32'))
+        norm2=torch.as_tensor(norm2_pad.astype('float32'))
+        flow=torch.as_tensor(flow_pad.astype('float32'))
+        # path=torch.as_tensor(path)
+        return (pos1, pos2, norm1, norm2, flow, path, pos1_mask, pos2_mask, norm1_mask, norm2_mask, flow_mask)
+
+def test_collate(batch):
+    pos1, pos2, norm1, norm2, flow, path= zip(*batch)
+
+    pos1=torch.as_tensor(pos1)
+    pos2=torch.as_tensor(pos2)
+    norm1=torch.as_tensor(norm1)
+    norm2=torch.as_tensor(norm2)
+    flow=torch.as_tensor(flow)
+
+    return (pos1,pos2, norm1, norm2, flow, path)
                     
 
             

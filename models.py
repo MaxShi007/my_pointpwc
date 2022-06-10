@@ -77,11 +77,11 @@ class PointConvSceneFlowPWC8192selfglobalPointConv(nn.Module):
         color2 = color2.permute(0, 2, 1) # B 3 N
         feat1_l0 = self.level0(color1)
         feat1_l0 = self.level0_1(feat1_l0)
-        feat1_l0_1 = self.level0_2(feat1_l0)
+        feat1_l0_1 = self.level0_2(feat1_l0) #B 64 N
 
         feat2_l0 = self.level0(color2)
         feat2_l0 = self.level0_1(feat2_l0)
-        feat2_l0_1 = self.level0_2(feat2_l0)
+        feat2_l0_1 = self.level0_2(feat2_l0) #B 64 N
 
         #l1
         pc1_l1, feat1_l1, fps_pc1_l1 = self.level1(pc1_l0, feat1_l0_1)
@@ -202,7 +202,7 @@ def multiScaleLoss(pred_flows, gt_flow, fps_idxs, alpha = [0.02, 0.04, 0.08, 0.1
 
     total_loss = torch.zeros(1).cuda()
     for i in range(num_scale):
-        diff_flow = pred_flows[i].permute(0, 2, 1) - gt_flows[i + offset] #pred_flows在cuda1，gt_flow在cuda0，所以多gpu跑不起来
+        diff_flow = pred_flows[i].permute(0, 2, 1) - gt_flows[i + offset] 
         total_loss += alpha[i] * torch.norm(diff_flow, dim = 2).sum(dim = 1).mean()
 
     return total_loss

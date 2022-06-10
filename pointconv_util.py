@@ -247,8 +247,8 @@ class PointConvD(nn.Module):
         #import ipdb; ipdb.set_trace()
         B = xyz.shape[0]
         N = xyz.shape[2]
-        xyz = xyz.permute(0, 2, 1)
-        points = points.permute(0, 2, 1)
+        xyz = xyz.permute(0, 2, 1) #B N 3
+        points = points.permute(0, 2, 1) # B N 64
 
         fps_idx = pointnet2_utils.furthest_point_sample(xyz, self.npoint)
         new_xyz = index_points_gather(xyz, fps_idx)

@@ -76,12 +76,18 @@ def main():
     ###################################################
     if args.dataset=='SemanticKitti': 
         transform=transforms.SemanticKittiProcessData(args.data_process,args.num_points)
+
         train_dataset=datasets.SemanticKitti(train=True,transform=transform,num_points=args.num_points,data_root=args.data_root,use_all=False)
-        train_loader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,shuffle=True,num_workers=args.workers,pin_memory=True)
+        val_dataset=datasets.SemanticKitti(train=False,transform=transform,num_points=args.num_points,data_root=args.data_root)
+
+        collate=None
+        if args.data_process['DOWN_SAMPLE_METHOD']=='voxel':
+            collate=datasets.Collater(args.data_process)
+
+        train_loader=torch.utils.data.DataLoader(train_dataset,batch_size=args.batch_size,shuffle=False,num_workers=args.workers,pin_memory=True,collate_fn=collate)
         logger.info('train_dataset: '+str(train_dataset))
 
-        val_dataset=datasets.SemanticKitti(train=False,transform=transform,num_points=args.num_points,data_root=args.data_root)
-        val_loader=torch.utils.data.DataLoader(val_dataset,batch_size=args.batch_size,shuffle=False,num_workers=args.workers,pin_memory=True)
+        val_loader=torch.utils.data.DataLoader(val_dataset,batch_size=args.batch_size,shuffle=False,num_workers=args.workers,pin_memory=True,collate_fn=collate)
         logger.info('val_dataset: '+str(val_dataset))
     ###########################################################
     else:
@@ -135,7 +141,7 @@ def main():
         model.cuda()
 
     if args.pretrain is not None:
-        model.load_state_dict(torch.load(args.pretrain))
+        model.module.load_state_dict(torch.load(args.pretrain))
         print('load model %s'%args.pretrain)
         logger.info('load model %s'%args.pretrain)
     else:
@@ -167,7 +173,11 @@ def main():
         total_seen = 0
         optimizer.zero_grad()
         for i, data in tqdm(enumerate(train_loader, 0), total=len(train_loader), smoothing=0.9):
-            pos1, pos2, norm1, norm2, flow, _ = data  
+            if args.data_process['DOWN_SAMPLE_METHOD']=='random':
+                pos1, pos2, norm1, norm2, flow, _ = data  # list6,[20,N,3]
+            elif args.data_process['DOWN_SAMPLE_METHOD']=='voxel':
+                pos1, pos2, norm1, norm2, flow, _,pos1_mask, pos2_mask, norm1_mask, norm2_mask, flow_mask = data  # list6,[20,N,3]
+            
             #move to cuda 
             pos1 = pos1.cuda()
             pos2 = pos2.cuda() 
@@ -188,6 +198,7 @@ def main():
             total_loss += loss.cpu().data * args.batch_size
             total_seen += args.batch_size
 
+
         scheduler.step()
 
         train_loss = total_loss / total_seen
@@ -195,7 +206,7 @@ def main():
         print(str_out)
         logger.info(str_out)
 
-        eval_epe3d, eval_loss = eval_sceneflow(model.eval(), val_loader)
+        eval_epe3d, eval_loss = eval_sceneflow(model.eval(), val_loader,args=args)
         str_out = 'EPOCH %d %s mean epe3d: %f  mean eval loss: %f'%(epoch, blue('eval'), eval_epe3d, eval_loss)
         print(str_out)
         logger.info(str_out)
@@ -220,11 +231,15 @@ def main():
         writer.add_scalar('best_epe',best_epe, epoch)
 
 
-def eval_sceneflow(model, loader):
+def eval_sceneflow(model, loader,args):
 
     metrics = defaultdict(lambda:list())
     for batch_id, data in tqdm(enumerate(loader), total=len(loader), smoothing=0.9):
-        pos1, pos2, norm1, norm2, flow, _ = data  
+        if args.data_process['DOWN_SAMPLE_METHOD']=='random':
+            pos1, pos2, norm1, norm2, flow, _ = data  
+        elif args.data_process['DOWN_SAMPLE_METHOD']=='voxel':
+            pos1, pos2, norm1, norm2, flow, _,pos1_mask, pos2_mask, norm1_mask, norm2_mask, flow_mask = data
+
         
         #move to cuda 
         pos1 = pos1.cuda()
@@ -238,10 +253,11 @@ def eval_sceneflow(model, loader):
 
             eval_loss = multiScaleLoss(pred_flows, flow, fps_pc1_idxs)
 
-            epe3d = torch.norm(pred_flows[0].permute(0, 2, 1) - flow, dim = 2).mean()
+            epe3d = torch.norm(pred_flows[0].permute(0, 2, 1) - flow, dim = 2).mean() # B,N,3
 
         metrics['epe3d_loss'].append(epe3d.cpu().data.numpy())
         metrics['eval_loss'].append(eval_loss.cpu().data.numpy())
+
 
     mean_epe3d = np.mean(metrics['epe3d_loss'])
     mean_eval = np.mean(metrics['eval_loss'])
