@@ -1,7 +1,7 @@
 gpu: "2"
 multi_gpu: "2,3" # "0,1,2,3" # null
 
-model_name: PointConv
+model_name: voxelsample_pad0_voxelsize0.3
 
 full: False 
 

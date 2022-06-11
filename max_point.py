@@ -33,30 +33,28 @@ def get_max_point(data_root,voxel_size):
         flow_gt=data['flow_gt']
 
         current_point_ds=down_sample(current_point,voxel_size)
-        last_point_ds=down_sample(last_point,voxel_size)
 
         if len(current_point_ds)>max_point_len:
-            max_point_len=len(current_point_ds)
-            max_point_path=path
-        if len(last_point_ds)>max_point_len:
-            max_point_len=len(last_point_ds)
-            max_point_path=path
+            max_point_len=len(current_point_ds[0])
+            max_point_path=path+'_current'
+        
 
     return max_point_len,max_point_path
 if __name__=='__main__':
     
     data_root='/share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point'
+    
 
     voxel_size=0.3
-    max_point,path=get_max_point(data_root,voxel_size)
+    max_point,path=get_max_point(data_root,voxel_size) # 10469 /share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point/00_002357.npz_current
     print(max_point,path)
 
     voxel_size=0.2
-    max_point,path=get_max_point(data_root,voxel_size)
+    max_point,path=get_max_point(data_root,voxel_size) # 16958 /share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point/00_002357.npz_current
     print(max_point,path)
 
     voxel_size=0.1
-    max_point,path=get_max_point(data_root,voxel_size)
+    max_point,path=get_max_point(data_root,voxel_size) # 32282 /share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point/00_002357.npz_current
     print(max_point,path)
 
 
