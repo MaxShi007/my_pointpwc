@@ -404,7 +404,7 @@ class SemanticKittiProcessData():
 
                 elif self.voxel_choice=='choice one':
                     #todo
-
+                    
                     pass
             
 
