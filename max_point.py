@@ -32,10 +32,10 @@ def get_max_point(data_root,voxel_size):
         last_point=data['last_point']
         flow_gt=data['flow_gt']
 
-        current_point_ds=down_sample(current_point,voxel_size)
+        current_point_ds,index=down_sample(current_point,voxel_size)
 
         if len(current_point_ds)>max_point_len:
-            max_point_len=len(current_point_ds[0])
+            max_point_len=len(current_point_ds)
             max_point_path=path+'_current'
         
 
@@ -58,12 +58,7 @@ if __name__=='__main__':
     print(max_point,path)
 
 
-    # '/share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point/10_000206.npz' #这是点数最多的文件，113888个点
-    # data=np.load(data_root)
-    # current_point=data['current_point']
-    # last_point=data['last_point']
-    # current_point_ds,current_point_ds_index=down_sample(current_point,voxel_size) #voxel_size=0.1 23150 # 0.2 8925 # 0.3 5034
-    # print(len(current_point_ds))
+
         
         
 

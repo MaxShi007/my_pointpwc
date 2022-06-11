@@ -29,6 +29,7 @@ from numba import njit
 from . import functional as F
 import open3d as o3d
 import time
+from torchsparse.utils.quantize import sparse_quantize
 
 # ---------- BASIC operations ----------
 class Compose(object):
@@ -350,7 +351,7 @@ class SemanticKittiProcessData():
         self.voxel_size=data_process_args['VOXEL_SIZE']
 
         assert self.down_sample_method in ['random', 'voxel']
-        assert self.voxel_choice in ['choice one', 'mean']
+        assert self.voxel_choice in ['choice_one', 'mean']
     
     def down_sample(self,points,voxel_size):
         '''
@@ -389,38 +390,45 @@ class SemanticKittiProcessData():
                 
             elif self.down_sample_method=='voxel':
                 #todo voxel dowm sample 
-                # start1=time.time()
-                current_point_ds,current_point_ds_index=self.down_sample(current_point,self.voxel_size)              
-                last_point_ds,last_point_ds_index=self.down_sample(last_point,self.voxel_size)
-                # print(f'voxel downsample time: {time.time()-start1}')
-                if self.voxel_choice=='mean':
-                    current_point=current_point_ds
-                    last_point=last_point_ds
-
-                    # start2=time.time()# ! 太慢了，0.8s左右了
+                if self.voxel_choice=='mean': #! 太慢了
+                    current_point_ds,current_point_ds_index=self.down_sample(current_point,self.voxel_size)              
+                    last_point_ds,last_point_ds_index=self.down_sample(last_point,self.voxel_size)
+                    # start2=time.time()
                     flow_gt_ds=[np.mean(flow_gt[current_point_ds_index[i]],axis=0) for i in range(len(current_point_ds_index))]
-                    flow_gt=flow_gt_ds
                     # print(f'flow_gt:{time.time()-start2}')
 
-                elif self.voxel_choice=='choice one':
-                    #todo
-                    
+                elif self.voxel_choice=='choice_one':
+                    changed_current_point=current_point.copy()
+                    changed_last_point=last_point.copy()
+
+                    min_current=np.min(changed_current_point,axis=0,keepdims=True)
+                    min_last=np.min(changed_last_point,axis=0,keepdims=True)
+                    changed_current_point-=min_current
+                    changed_last_point-=min_last
+
+                    coords_current,indices_current=sparse_quantize(changed_current_point,self.voxel_size,return_index=True)
+                    coords_last,indices_last=sparse_quantize(changed_last_point,self.voxel_size,return_index=True)
+
+                    current_point_ds=current_point[indices_current]
+                    last_point_ds=last_point[indices_last]
+                    flow_gt_ds=flow_gt[indices_current]
+
                     pass
             
 
         else:
-            pass
-            #todo send all points
-            print('num_points<0, send all points to model, maybe not work !!!!!!!!!!!!!!!!')
-            current_sampled_indexs=np.random.choice(current_point.shape[0],size=100,replace=False,p=None)
-            last_sampled_indexs=np.random.choice(last_point.shape[0],size=120,replace=False,p=None)
-            flow_sampled_indexs=current_sampled_indexs
+            print('ERROR :num_points<0')
+            # current_sampled_indexs=np.random.choice(current_point.shape[0],size=100,replace=False,p=None)
+            # last_sampled_indexs=np.random.choice(last_point.shape[0],size=120,replace=False,p=None)
+            # flow_sampled_indexs=current_sampled_indexs
 
-            current_point=current_point[current_sampled_indexs]
-            last_point=last_point[last_sampled_indexs]
-            flow_gt=flow_gt[flow_sampled_indexs]
-        # print(type(current_point[0,0]))
-        
+            # current_point=current_point[current_sampled_indexs]
+            # last_point=last_point[last_sampled_indexs]
+            # flow_gt=flow_gt[flow_sampled_indexs]
+
+        current_point=current_point_ds
+        last_point=last_point_ds
+        flow_gt=flow_gt_ds
         return current_point,last_point,flow_gt
     
     def __repr__(self):
