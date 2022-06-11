@@ -1,7 +1,7 @@
 gpu: "0"
 multi_gpu: "0,1,2,3" # "0,1,2,3" # null
 
-model_name: PointConv
+model_name: voxelsample_pad0_voxelsize0.3
 
 full: False 
 
@@ -10,7 +10,7 @@ last_relu: False
 allow_less_points: False
 
 # general args
-batch_size: 16 # 6 single gpu for 18776 num_min_point
+batch_size: 12 # 6 single gpu for 18776 num_min_point
 epochs: 800
 learning_rate: 0.001
 
