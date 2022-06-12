@@ -343,12 +343,13 @@ class Augmentation(object):
         return format_string
 
 class SemanticKittiProcessData():
-    def __init__(self,data_process_args,num_points):
+    def __init__(self,data_process_args,num_points,allow_less_points):
         self.down_sample_method = data_process_args['DOWN_SAMPLE_METHOD']
         # self.down_sample_method = 'random'
         self.num_points = num_points
         self.voxel_choice=data_process_args['VOXEL_CHOICE']
         self.voxel_size=data_process_args['VOXEL_SIZE']
+        self.allow_less_points = allow_less_points
 
         assert self.down_sample_method in ['random', 'voxel']
         assert self.voxel_choice in ['choice_one', 'mean']
@@ -373,15 +374,23 @@ class SemanticKittiProcessData():
         current_point,last_point,flow_gt=data
         if self.num_points > 0:
             if self.down_sample_method=='random':
-                start=time.time()
-                current_sampled_indexs=np.random.choice(current_point.shape[0],size=self.num_points,replace=False,p=None)
-                last_sampled_indexs=np.random.choice(last_point.shape[0],size=self.num_points,replace=False,p=None)
-                flow_sampled_indexs=current_sampled_indexs
-                print('random sampling time:',time.time()-start)
+                try:
+                    # start=time.time()
+                    current_sampled_indexs=np.random.choice(current_point.shape[0],size=self.num_points,replace=False,p=None)
+                    last_sampled_indexs=np.random.choice(last_point.shape[0],size=self.num_points,replace=False,p=None)
+                    flow_sampled_indexs=current_sampled_indexs
+                    # print('random sampling time:',time.time()-start)
+                except ValueError:
+                    if not self.allow_less_points:
+                        current_sampled_indexs=np.random.choice(current_point.shape[0],size=self.num_points,replace=True,p=None)
+                        last_sampled_indexs=np.random.choice(last_point.shape[0],size=self.num_points,replace=True,p=None)
+                        flow_sampled_indexs=current_sampled_indexs 
+                    else:
+                        print('Cannot sample {} points'.format(self.num_points))
 
-                current_point=current_point[current_sampled_indexs]
-                last_point=last_point[last_sampled_indexs]
-                flow_gt=flow_gt[flow_sampled_indexs]
+                current_point_ds=current_point[current_sampled_indexs]
+                last_point_ds=last_point[last_sampled_indexs]
+                flow_gt_ds=flow_gt[flow_sampled_indexs]
 
                 # np.save('ds_currnet_point.npy',currnet_point)
                 # np.save('ds_last_point.npy',last_point)

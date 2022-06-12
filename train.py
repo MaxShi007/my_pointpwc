@@ -75,7 +75,7 @@ def main():
     
     ###################################################
     if args.dataset=='SemanticKitti': 
-        transform=transforms.SemanticKittiProcessData(args.data_process,args.num_points)
+        transform=transforms.SemanticKittiProcessData(args.data_process,args.num_points,args.allow_less_points)
 
         train_dataset=datasets.SemanticKitti(train=True,transform=transform,num_points=args.num_points,data_root=args.data_root,use_all=False)
         val_dataset=datasets.SemanticKitti(train=False,transform=transform,num_points=args.num_points,data_root=args.data_root)
