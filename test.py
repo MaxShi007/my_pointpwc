@@ -71,13 +71,13 @@ if __name__=='__main__':
     
 
     voxel_size=0.3
-    max_point,path=get_max_point(data_root,voxel_size) # 10469 /share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point/00_002357.npz_current
+    max_point,path=get_max_point(data_root,voxel_size) 
     print(max_point,path)
 
     voxel_size=0.2
-    max_point,path=get_max_point(data_root,voxel_size) # 16958 /share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point/00_002357.npz_current
+    max_point,path=get_max_point(data_root,voxel_size)
     print(max_point,path)
 
     voxel_size=0.1
-    max_point,path=get_max_point(data_root,voxel_size) # 32282 /share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point/00_002357.npz_current
+    max_point,path=get_max_point(data_root,voxel_size) 
     print(max_point,path)

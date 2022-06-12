@@ -116,12 +116,18 @@ class Collater():
             flow_mask[i,:len(flow[i])]=1
 
             # todo sample padding
-            # if self.pat_method=='sample':
-            #     pos1_residual=max_pos1_len-len(pos1[i])
-            #     pos2_residual=max_pos2_len-len(pos2[i])
-            #     norm1_residual=max_norm1_len-len(norm1[i])
-            #     norm2_residual=max_norm2_len-len(norm2[i])
-            #     flow_residual=max_flow_len-len(flow[i])
+            if self.pat_method=='sample':
+                diff_count_pos1=max_pos1_len-len(pos1[i])
+                diff_count_pos2=max_pos2_len-len(pos2[i])
+
+                diff_pos1=np.random.choice(len(pos1[i]),diff_count_pos1,replace=False,p=None)
+                diff_pos2=np.random.choice(len(pos2[i]),diff_count_pos2,replace=False,p=None)
+                
+                pos1_pad[i,len(pos1[i]):,:]=pos1[i][diff_pos1]
+                pos2_pad[i,len(pos2[i]):,:]=pos2[i][diff_pos2]
+                norm1_pad[i,len(norm1[i]):,:]=norm1[i][diff_pos1]
+                norm2_pad[i,len(norm2[i]):,:]=norm2[i][diff_pos2]
+                flow_pad[i,len(flow[i]):,:]=flow[i][diff_pos1]
 
 
 
