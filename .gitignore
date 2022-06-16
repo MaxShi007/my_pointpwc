@@ -10,3 +10,5 @@ ft_experiment
 SAVE_PATH/
 .vscode/
 KITTI/
+pretrain_weights/
+flow_result/

@@ -422,7 +422,6 @@ class SemanticKittiProcessData():
                     last_point_ds=last_point[indices_last]
                     flow_gt_ds=flow_gt[indices_current]
 
-                    pass
             
 
         else:
