@@ -24,7 +24,7 @@ from utils import geometry
 from evaluation_utils import evaluate_2d, evaluate_3d
 
 def get_label_path(path):
-    
+    pass
 
 def load_semantic_label(sequence,frame):
     label_path=args.data_root+'/'+sequence+'/label_2/'+frame+'.npy'
