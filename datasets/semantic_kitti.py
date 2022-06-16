@@ -120,8 +120,8 @@ class Collater():
                 diff_count_pos1=max_pos1_len-len(pos1[i])
                 diff_count_pos2=max_pos2_len-len(pos2[i])
 
-                diff_pos1=np.random.choice(len(pos1[i]),diff_count_pos1,replace=False,p=None)
-                diff_pos2=np.random.choice(len(pos2[i]),diff_count_pos2,replace=False,p=None)
+                diff_pos1=np.random.choice(len(pos1[i]),diff_count_pos1,replace=True,p=None)
+                diff_pos2=np.random.choice(len(pos2[i]),diff_count_pos2,replace=True,p=None)
                 
                 pos1_pad[i,len(pos1[i]):,:]=pos1[i][diff_pos1]
                 pos2_pad[i,len(pos2[i]):,:]=pos2[i][diff_pos2]

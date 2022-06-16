@@ -1,7 +1,7 @@
 gpu: "0"
 multi_gpu: "0,1,2,3" # "0,1,2,3" # null
 
-model_name: voxelsample_pad0_voxelsize0.3
+model_name: voxel_choice_one_padsample_voxelsize0.2
 
 full: False 
 
@@ -10,7 +10,7 @@ last_relu: False
 allow_less_points: False
 
 # general args
-batch_size: 8 # 6 single gpu for 18776 num_min_point
+batch_size: 12 # 6 single gpu for 18776 num_min_point
 epochs: 800
 learning_rate: 0.001
 
@@ -33,7 +33,7 @@ data_process:
   NO_CORR: True
   DOWN_SAMPLE_METHOD: voxel # voxel # random
   VOXEL_CHOICE: choice_one # mean # choice_one
-  VOXEL_SIZE: 0.2
+  VOXEL_SIZE: 0.3
   PAD_METHOD: sample # zero # sample
 
 # data augmentation
