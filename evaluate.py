@@ -68,24 +68,37 @@ def main():
 
     blue = lambda x: '\033[94m' + x + '\033[0m'
     model = PointConvSceneFlow()
+    ######################################################################
+    if args.dataset=='SemanticKitti': 
+        transform=transforms.SemanticKittiProcessData(args.data_process,args.num_points,args.allow_less_points)
 
-    val_dataset = datasets.__dict__[args.dataset](
-        train=False,
-        transform=transforms.ProcessData(args.data_process,
-                                         args.num_points,
-                                         args.allow_less_points),
-        num_points=args.num_points,
-        data_root = args.data_root
-    )
-    logger.info('val_dataset: ' + str(val_dataset))
-    val_loader = torch.utils.data.DataLoader(
-        val_dataset,
-        batch_size=args.batch_size,
-        shuffle=False,
-        num_workers=args.workers,
-        pin_memory=True,
-        worker_init_fn=lambda x: np.random.seed((torch.initial_seed()) % (2 ** 32))
-    )
+        val_dataset=datasets.SemanticKitti(train=False,transform=transform,num_points=args.num_points,data_root=args.data_root)
+        logger.info('val_dataset: ' + str(val_dataset))
+
+        collate=None
+        if args.data_process['DOWN_SAMPLE_METHOD']=='voxel':
+            collate=datasets.Collater(args.data_process)
+        
+        val_loader=torch.utils.data.DataLoader(val_dataset,batch_size=args.batch_size,shuffle=False,num_workers=args.workers,pin_memory=True,collate_fn=collate)
+    ############################################################################
+    else:
+        val_dataset = datasets.__dict__[args.dataset](
+            train=False,
+            transform=transforms.ProcessData(args.data_process,
+                                            args.num_points,
+                                            args.allow_less_points),
+            num_points=args.num_points,
+            data_root = args.data_root
+        )
+        logger.info('val_dataset: ' + str(val_dataset))
+        val_loader = torch.utils.data.DataLoader(
+            val_dataset,
+            batch_size=args.batch_size,
+            shuffle=False,
+            num_workers=args.workers,
+            pin_memory=True,
+            worker_init_fn=lambda x: np.random.seed((torch.initial_seed()) % (2 ** 32))
+        )
 
     #load pretrained model
     pretrain = args.ckpt_dir + args.pretrain
@@ -108,7 +121,10 @@ def main():
     total_epe = 0
     metrics = defaultdict(lambda:list())
     for i, data in tqdm(enumerate(val_loader, 0), total=len(val_loader), smoothing=0.9):
-        pos1, pos2, norm1, norm2, flow, path = data  
+        if args.data_process['DOWN_SAMPLE_METHOD']=='random':
+                pos1, pos2, norm1, norm2, flow, _ = data  # list6,[20,N,3]
+        elif args.data_process['DOWN_SAMPLE_METHOD']=='voxel':
+            pos1, pos2, norm1, norm2, flow, _,pos1_mask, pos2_mask, norm1_mask, norm2_mask, flow_mask = data  # list6,[20,N,3]
 
         #move to cuda 
         pos1 = pos1.cuda()

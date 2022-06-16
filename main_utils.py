@@ -118,6 +118,9 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
+    def get_avg(self):
+        return self.avg
+
 
 def query_yes_no(question, default="yes"):
     """Ask a yes/no question via input() and return their answer.

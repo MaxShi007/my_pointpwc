@@ -14,19 +14,24 @@ last_relu: False
 allow_less_points: False
 
 # general args
-batch_size: 1
-pretrain: PointConv_726_0.0463.pth 
+batch_size: 2
+pretrain: PointConv_112_0.0533.pth
 dim: 3
-num_points: 8192
+num_points: 18776 # 31000 # 18776
 
 DEVICE: cuda
 
-dataset: FlyingThings3DSubset # FlyingThings3DSubset KITTI
-data_root: ./flyingthings3d
+dataset: SemanticKitti # FlyingThings3DSubset KITTI
+data_root: /share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point
 
 data_process:
   DEPTH_THRESHOLD: 35.
   NO_CORR: True
+  DOWN_SAMPLE_METHOD: voxel # voxel # random
+  VOXEL_CHOICE: choice_one # mean # choice_one
+  VOXEL_SIZE: 0.2
+  PAD_METHOD: sample # zero # sample
+
 
 # miscalleneous
 workers: 16
