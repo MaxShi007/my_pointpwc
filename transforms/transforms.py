@@ -342,6 +342,10 @@ class Augmentation(object):
         format_string += ')'
         return format_string
 
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+debug=False
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 class SemanticKittiProcessData():
     def __init__(self,data_process_args,num_points,allow_less_points):
         self.down_sample_method = data_process_args['DOWN_SAMPLE_METHOD']
@@ -421,6 +425,19 @@ class SemanticKittiProcessData():
                     current_point_ds=current_point[indices_current]
                     last_point_ds=last_point[indices_last]
                     flow_gt_ds=flow_gt[indices_current]
+                    if debug:
+                        print(f"debug:{debug}")
+                        try:
+                            current_sampled_indexs=np.random.choice(current_point_ds.shape[0],size=self.num_points,replace=False,p=None)
+                            last_sampled_indexs=np.random.choice(last_point_ds.shape[0],size=self.num_points,replace=False,p=None)
+                        except ValueError:
+                            current_sampled_indexs=np.random.choice(current_point_ds.shape[0],size=self.num_points,replace=True,p=None)
+                            last_sampled_indexs=np.random.choice(last_point_ds.shape[0],size=self.num_points,replace=True,p=None)
+                        flow_sampled_indexs=current_sampled_indexs 
+
+                        current_point_ds=current_point_ds[current_sampled_indexs]
+                        last_point_ds=last_point_ds[last_sampled_indexs]
+                        flow_gt_ds=flow_gt_ds[flow_sampled_indexs]
 
             
 

@@ -1,7 +1,7 @@
 gpu: "0"
 multi_gpu: "0,1,2,3" # "0,1,2,3" # null
 
-model_name: voxel_choice_one_padsample_voxelsize0.2
+model_name: voxel_choice_one_padsample_voxelsize0.3_debugtest
 
 full: False 
 
@@ -19,7 +19,7 @@ pretrain: null #./experiment/PointConvFlyingthings3d-2019-11-05_12-58/checkpoint
 weight_decay: 0.0001
 
 dim: 3
-num_points: 31000 # 8192 16384 32768 # 18776 this is the min_num_point in semanticKitti non ground
+num_points: 18776 # 8192 16384 32768 # 18776 this is the min_num_point in semanticKitti non ground
 
 DEVICE: cuda
 

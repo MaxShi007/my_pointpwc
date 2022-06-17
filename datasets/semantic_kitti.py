@@ -54,7 +54,10 @@ class SemanticKitti(Dataset):
     def make_dataset(self,use_all):
         paths=[]
         if self.test:
-            paths=[os.path.join(root,file) for root,dir,files in os.walk(self.root) for file in files if file.split('_')[0] in ['04','07']]
+            print(f"test: {self.test}")
+            test_sequences=['01']
+            print(f"test_sequences: {test_sequences}")
+            paths=[os.path.join(root,file) for root,dir,files in os.walk(self.root) for file in files if file.split('_')[0] in test_sequences]
         else:
             if self.train:
                 if use_all:

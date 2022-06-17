@@ -18,7 +18,7 @@ import logging
 
 from tqdm import tqdm 
 from models import PointConvSceneFlowPWC8192selfglobalPointConv as PointConvSceneFlow
-from models import multiScaleLoss
+from models import multiScaleLoss,my_mutil_scale_loss
 from pathlib import Path
 from collections import defaultdict
 
@@ -187,8 +187,12 @@ def main():
 
             model = model.train() 
             pred_flows, fps_pc1_idxs, _, _, _ = model(pos1, pos2, norm1, norm2)
+            if args.data_process['DOWN_SAMPLE_METHOD']=='random':
+                loss = multiScaleLoss(pred_flows, flow, fps_pc1_idxs)
+            elif args.data_process['DOWN_SAMPLE_METHOD']=='voxel':
+                # loss = multiScaleLoss(pred_flows, flow, fps_pc1_idxs)
+                loss=my_mutil_scale_loss(pred_flows, flow, fps_pc1_idxs, pos1_mask, flow_mask)
 
-            loss = multiScaleLoss(pred_flows, flow, fps_pc1_idxs)
 
             history['loss'].append(loss.cpu().data.numpy())
             loss.backward()
@@ -251,7 +255,11 @@ def eval_sceneflow(model, loader,args):
         with torch.no_grad():
             pred_flows, fps_pc1_idxs, _, _, _ = model(pos1, pos2, norm1, norm2)
 
-            eval_loss = multiScaleLoss(pred_flows, flow, fps_pc1_idxs)
+            if args.data_process['DOWN_SAMPLE_METHOD']=='random':
+                eval_loss = multiScaleLoss(pred_flows, flow, fps_pc1_idxs)
+            elif args.data_process['DOWN_SAMPLE_METHOD']=='voxel':
+                print("my_mutil_scale_loss")
+                eval_loss=my_mutil_scale_loss(pred_flows, flow, fps_pc1_idxs, pos1_mask, flow_mask)
 
             epe3d = torch.norm(pred_flows[0].permute(0, 2, 1) - flow, dim = 2).mean() # B,N,3
 

@@ -1,5 +1,5 @@
 gpu: "0"
-multi_gpu: null
+multi_gpu: null # "0,1,2,3"
 
 model_name: PointConv
 
@@ -14,7 +14,7 @@ last_relu: False
 allow_less_points: False
 
 # general args
-batch_size: 2
+batch_size: 1
 pretrain: PointConv_112_0.0533.pth
 dim: 3
 num_points: 18776 # 31000 # 18776

@@ -12,6 +12,7 @@ from pointconv_util import PointConv, PointConvD, PointWarping, UpsampleFlow, Po
 from pointconv_util import SceneFlowEstimatorPointConv
 from pointconv_util import index_points_gather as index_points, index_points_group, Conv1d, square_distance
 import time
+from icecream import ic
 
 scale = 1.0
 
@@ -206,6 +207,49 @@ def multiScaleLoss(pred_flows, gt_flow, fps_idxs, alpha = [0.02, 0.04, 0.08, 0.1
         total_loss += alpha[i] * torch.norm(diff_flow, dim = 2).sum(dim = 1).mean()
 
     return total_loss
+
+def my_mutil_scale_loss(pred_flows, gt_flow, fps_idxs, pred_flows_mask,gt_flow_mask,alpha = [0.02, 0.04, 0.08, 0.16]):
+    '''
+    args:
+        pred_flows: [num_scale, B,3,N]
+        gt_flow: [B,N,3]
+        fps_idxs: [num_scale-1, B,ds_num]
+        pred_flows_mask: [B,N]
+        gt_flow_mask: [B,N]
+    '''
+    num_scale = len(pred_flows)
+    batch_size=len(gt_flow)
+
+    gt_flows = [gt_flow]
+    pred_flows_mask=torch.as_tensor(pred_flows_mask).bool().cuda()
+    masks=[pred_flows_mask]
+    for i in range(1, len(fps_idxs) + 1):
+        fps_idx = fps_idxs[i - 1]
+        # np_fps_idx=fps_idx.cpu().numpy()
+
+        sub_gt_flow = index_points(gt_flows[-1], fps_idx) / scale # B,N,3
+        gt_flows.append(sub_gt_flow)
+
+        mask_=masks[-1]
+        sub_mask=torch.gather(mask_,1,fps_idx.long())
+        ######
+        # for i in range(len(sub_mask)):
+        #     ic(torch.unique(sub_mask[i],return_counts=True))
+        ######
+        masks.append(sub_mask)
+    
+    total_loss = torch.zeros(1).cuda()
+    for i in range(num_scale):
+        pred_flow_i=pred_flows[i].permute(0, 2, 1)
+        used_pred_flow=pred_flow_i[masks[i]]
+        used_gt_flow=gt_flows[i][masks[i]]
+        diff_flow = used_pred_flow - used_gt_flow
+        total_loss += alpha[i] * torch.norm(diff_flow, dim = 1).sum()
+
+    total_loss=total_loss/batch_size
+    
+    return total_loss
+
 
 def curvature(pc):
     # pc: B 3 N

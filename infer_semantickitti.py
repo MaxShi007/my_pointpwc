@@ -29,6 +29,9 @@ def infer(save_root):
     global args 
     args = cmd_args.parse_args_from_yaml(sys.argv[1])
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu if args.multi_gpu is None else '0,1,2,3'
+                
+    if not os.path.exists(save_root):
+        os.makedirs(save_root)
 
     model_time=AverageMeter()
     all_time=AverageMeter()
@@ -75,12 +78,10 @@ def infer(save_root):
             pos2=pos2.cpu().numpy()
             pred_flow=full_flow.cpu().numpy()
             flow_gt=flow.cpu().numpy()
-            
-            if not os.path.exists(save_root):
-                os.mkdir(save_root)
 
             for i in range(len(batch_path)):
                 save_path=os.path.join(save_root,batch_path[i].split('/')[-1])
+                print(save_path)
                 pos1_i=pos1[i]
                 pos2_i=pos2[i]
                 pred_flow_i=pred_flow[i]
@@ -103,5 +104,7 @@ def infer(save_root):
             
 
 if __name__=="__main__":
-    save_root='flow_result/flow_result_voxel_choiceone_0.2_sample_PointConv_112_0.0533_seq0407'
+    # if not os.path.exists("flow_result"):
+    #     os.mkdir("flow_result")
+    save_root='flow_result/01_voxel_choiceone_0.2_sample_PointConv_112_0.0533_seq0407'
     infer(save_root)

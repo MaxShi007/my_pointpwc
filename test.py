@@ -1,3 +1,4 @@
+from cgi import print_arguments
 import numpy as np
 from torchsparse.utils.quantize import sparse_quantize
 from itertools import repeat
@@ -70,6 +71,7 @@ def get_max_point(data_root,voxel_size):
 def test2(data_root,voxel_size):
     paths=glob.glob(data_root+'/*.npz')
     for path in tqdm(paths):
+        print(path)
         data=np.load(path)
         current_point=data['current_point']
         last_point=data['last_point']
@@ -78,15 +80,33 @@ def test2(data_root,voxel_size):
         current_point-=np.min(current_point, axis=0, keepdims=True)
         coords_all=np.floor(current_point / voxel_size).astype(np.int32) 
         coords_ds,index=sparse_quantize(current_point,voxel_size=voxel_size,return_index=True)
-        print(coords_all.shape,coords_ds)
-        print(coords_all.min(),coords_all.max())
-        ic(coords_ds.shape,coords_ds)
-        ic(np.min(coords_ds,axis=0),np.max(coords_ds,axis=0))
+        # print(coords_all.shape,coords_ds)
+        # print(coords_all.min(),coords_all.max())
+        # ic(coords_ds.shape,coords_ds)
+        # ic(np.min(coords_ds,axis=0),np.max(coords_ds,axis=0))
+        ic(coords_ds,index)
         break
 
-        
+def test3(data_root,voxel_size):
+    paths=glob.glob(data_root+'/*.npz')
+    for path in tqdm(paths):
+        print(path)
+        data=np.load(path)
+        current_point=data['current_point']
+        last_point=data['last_point']
+        flow_gt=data['flow_gt']
 
+        current_point-=np.min(current_point, axis=0, keepdims=True)
 
+        coords_ds,index1,inverse=sparse_quantize(current_point,voxel_size=voxel_size,return_index=True,return_inverse=True)
+        ic(coords_ds,index1,inverse)
+        coords_ds,index2,inverse=sparse_quantize(current_point,voxel_size=voxel_size,return_index=True,return_inverse=True)
+        ic(coords_ds,index2,inverse)
+        if (index1==index2).all():
+            print('same')
+        index,count=np.unique(inverse,return_counts=True)
+        ic(count.max(),count.min())
+        break
 
 
 
@@ -94,8 +114,8 @@ if __name__=='__main__':
     
     data_root='/share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point'
     
-
-    voxel_size=0.1
+#################################################
+    # voxel_size=0.3
     # max_point,path=get_max_point(data_root,voxel_size) 
     # print(max_point,path)
 
@@ -106,4 +126,9 @@ if __name__=='__main__':
     # voxel_size=0.1
     # max_point,path=get_max_point(data_root,voxel_size) 
     # print(max_point,path)
+####################################################
+    voxel_size=0.2
     test2(data_root,voxel_size)
+##################################################
+    voxel_size=0.2
+    test3(data_root,voxel_size)
