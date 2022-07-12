@@ -33,12 +33,12 @@ class SemanticKitti(Dataset):
 
     def __getitem__(self, index):
         current_point,last_point,flow_gt=self.pc_loader(self.samples[index])
-        current_point_transformed,last_point_transformed,flow_gt_transformed=self.transform([current_point,last_point,flow_gt])
+        current_point_transformed,last_point_transformed,flow_gt_transformed,inverse_current,allpoints_current,allpoints_last=self.transform([current_point,last_point,flow_gt])
 
         current_point_norm=current_point_transformed
         last_point_norm=last_point_transformed
 
-        return current_point_transformed,last_point_transformed,current_point_norm,last_point_norm,flow_gt_transformed,self.samples[index]
+        return current_point_transformed,last_point_transformed,current_point_norm,last_point_norm,flow_gt_transformed,self.samples[index],inverse_current,allpoints_current,allpoints_last
 
     def pc_loader(self,path):
         data=np.load(path)
@@ -55,7 +55,7 @@ class SemanticKitti(Dataset):
         paths=[]
         if self.test:
             print(f"test: {self.test}")
-            test_sequences=['01']
+            test_sequences=['00','01','02','03','04','05','06','07','08','09','10']
             print(f"test_sequences: {test_sequences}")
             paths=[os.path.join(root,file) for root,dir,files in os.walk(self.root) for file in files if file.split('_')[0] in test_sequences]
         else:
@@ -88,7 +88,7 @@ class Collater():
         self.pat_method=data_process_args['PAD_METHOD'] 
 
     def __call__(self,batch):
-        pos1, pos2, norm1, norm2, flow, path= zip(*batch)
+        pos1, pos2, norm1, norm2, flow, path,inverse_current,allpoints_current,allpoints_last= zip(*batch)
         batch_len=len(pos1)
 
         max_pos1_len=max([len(x) for x in pos1])
@@ -145,7 +145,7 @@ class Collater():
         norm2=torch.as_tensor(norm2_pad.astype('float32'))
         flow=torch.as_tensor(flow_pad.astype('float32'))
         # path=torch.as_tensor(path)
-        return (pos1, pos2, norm1, norm2, flow, path, pos1_mask, pos2_mask, norm1_mask, norm2_mask, flow_mask)
+        return (pos1, pos2, norm1, norm2, flow, path, pos1_mask, pos2_mask, norm1_mask, norm2_mask, flow_mask,inverse_current,allpoints_current,allpoints_last)
 
 def test_collate(batch):
     pos1, pos2, norm1, norm2, flow, path= zip(*batch)

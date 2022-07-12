@@ -396,6 +396,12 @@ class SemanticKittiProcessData():
                 last_point_ds=last_point[last_sampled_indexs]
                 flow_gt_ds=flow_gt[flow_sampled_indexs]
 
+                inverse_current=[]
+                inverse_last=[]
+                allpoints_current=[]
+                allpoints_last=[]
+
+
                 # np.save('ds_currnet_point.npy',currnet_point)
                 # np.save('ds_last_point.npy',last_point)
                 # np.save('ds_flow_gt.npy',flow_gt)
@@ -403,12 +409,16 @@ class SemanticKittiProcessData():
                 
             elif self.down_sample_method=='voxel':
                 #todo voxel dowm sample 
-                if self.voxel_choice=='mean': #! 太慢了
+                if self.voxel_choice=='mean': #! 太慢了,弃用
                     current_point_ds,current_point_ds_index=self.down_sample(current_point,self.voxel_size)              
                     last_point_ds,last_point_ds_index=self.down_sample(last_point,self.voxel_size)
                     # start2=time.time()
                     flow_gt_ds=[np.mean(flow_gt[current_point_ds_index[i]],axis=0) for i in range(len(current_point_ds_index))]
                     # print(f'flow_gt:{time.time()-start2}')
+                    inverse_current=[]
+                    inverse_last=[]
+                    allpoints_current=[]
+                    allpoints_last=[]
 
                 elif self.voxel_choice=='choice_one':
                     changed_current_point=current_point.copy()
@@ -419,8 +429,14 @@ class SemanticKittiProcessData():
                     changed_current_point-=min_current
                     changed_last_point-=min_last
 
-                    coords_current,indices_current=sparse_quantize(changed_current_point,self.voxel_size,return_index=True)
-                    coords_last,indices_last=sparse_quantize(changed_last_point,self.voxel_size,return_index=True)
+                    # all_coords_current=np.floor(changed_current_point/self.voxel_size).astype(np.int32)
+
+                    coords_current,indices_current,inverse_current=sparse_quantize(changed_current_point,self.voxel_size,return_index=True,return_inverse=True)
+                    coords_last,indices_last,inverse_last=sparse_quantize(changed_last_point,self.voxel_size,return_index=True,return_inverse=True)
+
+                    allpoints_current=current_point
+                    allpoints_last=last_point
+                    # assert (coords_current not in all_coords_current),'坐标不匹配'
 
                     current_point_ds=current_point[indices_current]
                     last_point_ds=last_point[indices_last]
@@ -442,19 +458,19 @@ class SemanticKittiProcessData():
             
 
         else:
-            print('ERROR :num_points<0')
-            # current_sampled_indexs=np.random.choice(current_point.shape[0],size=100,replace=False,p=None)
-            # last_sampled_indexs=np.random.choice(last_point.shape[0],size=120,replace=False,p=None)
-            # flow_sampled_indexs=current_sampled_indexs
+            print('num_points<0,不进行下采样,经过实验不行，out of memory')
+            current_point_ds=current_point
+            last_point_ds=last_point
+            flow_gt_ds=flow_gt
 
-            # current_point=current_point[current_sampled_indexs]
-            # last_point=last_point[last_sampled_indexs]
-            # flow_gt=flow_gt[flow_sampled_indexs]
+            inverse_current=[]
+            inverse_last=[]
+            allpoints_current=[]
+            allpoints_last=[]
 
-        current_point=current_point_ds
-        last_point=last_point_ds
-        flow_gt=flow_gt_ds
-        return current_point,last_point,flow_gt
+
+
+        return current_point_ds,last_point_ds,flow_gt_ds,inverse_current,allpoints_current,allpoints_last
     
     def __repr__(self):
         format_string = self.__class__.__name__ + '\n(data_process_args: \n'

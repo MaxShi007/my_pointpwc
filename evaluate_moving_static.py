@@ -101,9 +101,9 @@ def eval():
 
     for i, data in tqdm(enumerate(val_loader, 0), total=len(val_loader), smoothing=0.9):
         if args.data_process['DOWN_SAMPLE_METHOD']=='random':
-                pos1, pos2, norm1, norm2, flow, batch_path = data
+                pos1, pos2, norm1, norm2, flow, batch_path,_,_,_ = data
         elif args.data_process['DOWN_SAMPLE_METHOD']=='voxel':
-            pos1, pos2, norm1, norm2, flow, batch_path,pos1_mask, pos2_mask, norm1_mask, norm2_mask, flow_mask = data 
+            pos1, pos2, norm1, norm2, flow, batch_path,pos1_mask, pos2_mask, norm1_mask, norm2_mask, flow_mask ,_,_,_= data 
 
         pos1 = pos1.cuda()
         pos2 = pos2.cuda() 
@@ -194,6 +194,9 @@ def eval():
     print('*'*50)
 
 if __name__=='__main__':
+    ##############
+    # 该eval仅评估下采样后的点，不评估网络估计的flow上采样后的结果，因为下采样后的点是网络直接输出的，可以用来评判网络性能
+    #################
     label_root='/share/sgb/semantic_kitti/dataset'
     non_ground_root='/share/sgb/kitti-ground'
     eval()

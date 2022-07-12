@@ -174,9 +174,9 @@ def main():
         optimizer.zero_grad()
         for i, data in tqdm(enumerate(train_loader, 0), total=len(train_loader), smoothing=0.9):
             if args.data_process['DOWN_SAMPLE_METHOD']=='random':
-                pos1, pos2, norm1, norm2, flow, _ = data  # list6,[20,N,3]
+                pos1, pos2, norm1, norm2, flow, _,allpoint_pos1_coords,pos1_coords,pos1_allpoint = data  # list6,[20,N,3]
             elif args.data_process['DOWN_SAMPLE_METHOD']=='voxel':
-                pos1, pos2, norm1, norm2, flow, _,pos1_mask, pos2_mask, norm1_mask, norm2_mask, flow_mask = data  # list6,[20,N,3]
+                pos1, pos2, norm1, norm2, flow, _,pos1_mask, pos2_mask, norm1_mask, norm2_mask, flow_mask,allpoint_pos1_coords,pos1_coords,pos1_allpoint = data  # list6,[20,N,3]
             
             #move to cuda 
             pos1 = pos1.cuda()

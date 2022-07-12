@@ -108,6 +108,11 @@ def test3(data_root,voxel_size):
         ic(count.max(),count.min())
         break
 
+def test4(voxel_size):
+    a=np.array([[1,1,1],[2,3,2],[3,3,3],[1.21,1.05,1.05],[1.05,1.05,1.05]])
+    coords = np.floor(a / voxel_size).astype(np.int32)
+    print(coords)
+
 
 
 if __name__=='__main__':
@@ -127,8 +132,11 @@ if __name__=='__main__':
     # max_point,path=get_max_point(data_root,voxel_size) 
     # print(max_point,path)
 ####################################################
+#     voxel_size=0.2
+#     test2(data_root,voxel_size)
+# ##################################################
+#     voxel_size=0.2
+#     test3(data_root,voxel_size)
+#############################################
     voxel_size=0.2
-    test2(data_root,voxel_size)
-##################################################
-    voxel_size=0.2
-    test3(data_root,voxel_size)
+    test4(voxel_size)
