@@ -31,6 +31,7 @@ import open3d as o3d
 import time
 from torchsparse.utils.quantize import sparse_quantize
 
+
 # ---------- BASIC operations ----------
 class Compose(object):
     """Composes several transforms together.
@@ -63,6 +64,7 @@ class Compose(object):
 
 
 class ToTensor(object):
+
     def __call__(self, pic):
         if not isinstance(pic, np.ndarray):
             return pic
@@ -74,7 +76,12 @@ class ToTensor(object):
 
 
 # ---------- Build permutalhedral lattice ----------
-@njit(numba.int64(numba.int64[:], numba.int64, numba.int64[:], numba.int64[:], ))
+@njit(numba.int64(
+    numba.int64[:],
+    numba.int64,
+    numba.int64[:],
+    numba.int64[:],
+))
 def key2int(key, dim, key_maxs, key_mins):
     """
     :param key: np.array
@@ -93,9 +100,14 @@ def key2int(key, dim, key_maxs, key_mins):
     return res
 
 
-@njit(numba.int64[:](numba.int64, numba.int64, numba.int64[:], numba.int64[:], ))
+@njit(numba.int64[:](
+    numba.int64,
+    numba.int64,
+    numba.int64[:],
+    numba.int64[:],
+))
 def int2key(int_key, dim, key_maxs, key_mins):
-    key = np.empty((dim + 1,), dtype=np.int64)
+    key = np.empty((dim + 1, ), dtype=np.int64)
     scales = key_maxs - key_mins + 1
     for idx in range(dim, 0, -1):
         key[idx] = int_key % scales[idx]
@@ -117,6 +129,7 @@ def advance_in_dimension(d1, increment, adv_dim, key):
 
 
 class Traverse:
+
     def __init__(self, neighborhood_size, d):
         self.neighborhood_size = neighborhood_size
         self.d = d
@@ -139,6 +152,7 @@ class Traverse:
 
 # ---------- MAIN operations ----------
 class ProcessData(object):
+
     def __init__(self, data_process_args, num_points, allow_less_points):
         self.DEPTH_THRESHOLD = data_process_args['DEPTH_THRESHOLD']
         self.no_corr = data_process_args['NO_CORR']
@@ -209,6 +223,7 @@ class ProcessData(object):
 
 
 class Augmentation(object):
+
     def __init__(self, aug_together_args, aug_pc2_args, data_process_args, num_points, allow_less_points=False):
         self.together_args = aug_together_args
         self.pc2_args = aug_pc2_args
@@ -224,28 +239,19 @@ class Augmentation(object):
 
         # together, order: scale, rotation, shift, jitter
         # scale
-        scale = np.diag(np.random.uniform(self.together_args['scale_low'],
-                                          self.together_args['scale_high'],
-                                          3).astype(np.float32))
+        scale = np.diag(np.random.uniform(self.together_args['scale_low'], self.together_args['scale_high'], 3).astype(np.float32))
         # rotation
-        angle = np.random.uniform(-self.together_args['degree_range'],
-                                  self.together_args['degree_range'])
+        angle = np.random.uniform(-self.together_args['degree_range'], self.together_args['degree_range'])
         cosval = np.cos(angle)
         sinval = np.sin(angle)
-        rot_matrix = np.array([[cosval, 0, sinval],
-                               [0, 1, 0],
-                               [-sinval, 0, cosval]], dtype=np.float32)
+        rot_matrix = np.array([[cosval, 0, sinval], [0, 1, 0], [-sinval, 0, cosval]], dtype=np.float32)
         matrix = scale.dot(rot_matrix.T)
 
         # shift
-        shifts = np.random.uniform(-self.together_args['shift_range'],
-                                   self.together_args['shift_range'],
-                                   (1, 3)).astype(np.float32)
+        shifts = np.random.uniform(-self.together_args['shift_range'], self.together_args['shift_range'], (1, 3)).astype(np.float32)
 
         # jitter
-        jitter = np.clip(self.together_args['jitter_sigma'] * np.random.randn(pc1.shape[0], 3),
-                         -self.together_args['jitter_clip'],
-                         self.together_args['jitter_clip']).astype(np.float32)
+        jitter = np.clip(self.together_args['jitter_sigma'] * np.random.randn(pc1.shape[0], 3), -self.together_args['jitter_clip'], self.together_args['jitter_clip']).astype(np.float32)
         bias = shifts + jitter
 
         pc1[:, :3] = pc1[:, :3].dot(matrix) + bias
@@ -253,26 +259,18 @@ class Augmentation(object):
 
         # pc2, order: rotation, shift, jitter
         # rotation
-        angle2 = np.random.uniform(-self.pc2_args['degree_range'],
-                                   self.pc2_args['degree_range'])
+        angle2 = np.random.uniform(-self.pc2_args['degree_range'], self.pc2_args['degree_range'])
         cosval2 = np.cos(angle2)
         sinval2 = np.sin(angle2)
-        matrix2 = np.array([[cosval2, 0, sinval2],
-                            [0, 1, 0],
-                            [-sinval2, 0, cosval2]], dtype=pc1.dtype)
+        matrix2 = np.array([[cosval2, 0, sinval2], [0, 1, 0], [-sinval2, 0, cosval2]], dtype=pc1.dtype)
         # shift
-        shifts2 = np.random.uniform(-self.pc2_args['shift_range'],
-                                    self.pc2_args['shift_range'],
-                                    (1, 3)).astype(np.float32)
+        shifts2 = np.random.uniform(-self.pc2_args['shift_range'], self.pc2_args['shift_range'], (1, 3)).astype(np.float32)
 
         pc2[:, :3] = pc2[:, :3].dot(matrix2.T) + shifts2
         sf = pc2[:, :3] - pc1[:, :3]
-        
 
         if not self.no_corr:
-            jitter2 = np.clip(self.pc2_args['jitter_sigma'] * np.random.randn(pc1.shape[0], 3),
-                              -self.pc2_args['jitter_clip'],
-                              self.pc2_args['jitter_clip']).astype(np.float32)
+            jitter2 = np.clip(self.pc2_args['jitter_sigma'] * np.random.randn(pc1.shape[0], 3), -self.pc2_args['jitter_clip'], self.pc2_args['jitter_clip']).astype(np.float32)
             pc2[:, :3] += jitter2
 
         if self.DEPTH_THRESHOLD > 0:
@@ -342,140 +340,145 @@ class Augmentation(object):
         format_string += ')'
         return format_string
 
+
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-debug=False
+debug = True
+print("*" * 50)
+print("DEBUG:", debug)
+print("*" * 50)
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
 class SemanticKittiProcessData():
-    def __init__(self,data_process_args,num_points,allow_less_points):
+
+    def __init__(self, data_process_args, num_points, allow_less_points):
         self.down_sample_method = data_process_args['DOWN_SAMPLE_METHOD']
         # self.down_sample_method = 'random'
         self.num_points = num_points
-        self.voxel_choice=data_process_args['VOXEL_CHOICE']
-        self.voxel_size=data_process_args['VOXEL_SIZE']
+        self.voxel_choice = data_process_args['VOXEL_CHOICE']
+        self.voxel_size = data_process_args['VOXEL_SIZE']
         self.allow_less_points = allow_less_points
 
         assert self.down_sample_method in ['random', 'voxel']
         assert self.voxel_choice in ['choice_one', 'mean']
-    
-    def down_sample(self,points,voxel_size):
+
+    def down_sample(self, points, voxel_size):
         '''
         returns:
             pc_ds_points: ndarray
             pc_ds_index: [[]]
         '''
-        pc=o3d.geometry.PointCloud()
-        pc.points=o3d.utility.Vector3dVector(points)
+        pc = o3d.geometry.PointCloud()
+        pc.points = o3d.utility.Vector3dVector(points)
         pc_min_bound = pc.get_min_bound()
         pc_max_bound = pc.get_max_bound()
-        pc_ds=pc.voxel_down_sample_and_trace(voxel_size=voxel_size,min_bound=pc_min_bound,max_bound=pc_max_bound)
-        pc_ds_points=np.asarray(pc_ds[0].points)
-        pc_ds_index=[list(index) for index in pc_ds[2]]
-        
-        return pc_ds_points,pc_ds_index
+        pc_ds = pc.voxel_down_sample_and_trace(voxel_size=voxel_size, min_bound=pc_min_bound, max_bound=pc_max_bound)
+        pc_ds_points = np.asarray(pc_ds[0].points)
+        pc_ds_index = [list(index) for index in pc_ds[2]]
 
-    def __call__(self, data) :
-        current_point,last_point,flow_gt=data
+        return pc_ds_points, pc_ds_index
+
+    def __call__(self, data):
+        current_point, last_point, flow_gt = data
         if self.num_points > 0:
-            if self.down_sample_method=='random':
+            if self.down_sample_method == 'random':
                 try:
                     # start=time.time()
-                    current_sampled_indexs=np.random.choice(current_point.shape[0],size=self.num_points,replace=False,p=None)
-                    last_sampled_indexs=np.random.choice(last_point.shape[0],size=self.num_points,replace=False,p=None)
-                    flow_sampled_indexs=current_sampled_indexs
+                    current_sampled_indexs = np.random.choice(current_point.shape[0], size=self.num_points, replace=False, p=None)
+                    last_sampled_indexs = np.random.choice(last_point.shape[0], size=self.num_points, replace=False, p=None)
+                    flow_sampled_indexs = current_sampled_indexs
                     # print('random sampling time:',time.time()-start)
                 except ValueError:
                     if not self.allow_less_points:
-                        current_sampled_indexs=np.random.choice(current_point.shape[0],size=self.num_points,replace=True,p=None)
-                        last_sampled_indexs=np.random.choice(last_point.shape[0],size=self.num_points,replace=True,p=None)
-                        flow_sampled_indexs=current_sampled_indexs 
+                        current_sampled_indexs = np.random.choice(current_point.shape[0], size=self.num_points, replace=True, p=None)
+                        last_sampled_indexs = np.random.choice(last_point.shape[0], size=self.num_points, replace=True, p=None)
+                        flow_sampled_indexs = current_sampled_indexs
                     else:
                         print('Cannot sample {} points'.format(self.num_points))
 
-                current_point_ds=current_point[current_sampled_indexs]
-                last_point_ds=last_point[last_sampled_indexs]
-                flow_gt_ds=flow_gt[flow_sampled_indexs]
+                current_point_ds = current_point[current_sampled_indexs]
+                last_point_ds = last_point[last_sampled_indexs]
+                flow_gt_ds = flow_gt[flow_sampled_indexs]
 
-                inverse_current=[]
-                inverse_last=[]
-                allpoints_current=[]
-                allpoints_last=[]
-
+                inverse_current = []
+                inverse_last = []
+                allpoints_current = []
+                allpoints_last = []
 
                 # np.save('ds_currnet_point.npy',currnet_point)
                 # np.save('ds_last_point.npy',last_point)
                 # np.save('ds_flow_gt.npy',flow_gt)
-            
-                
-            elif self.down_sample_method=='voxel':
-                #todo voxel dowm sample 
-                if self.voxel_choice=='mean': #! 太慢了,弃用
-                    current_point_ds,current_point_ds_index=self.down_sample(current_point,self.voxel_size)              
-                    last_point_ds,last_point_ds_index=self.down_sample(last_point,self.voxel_size)
+
+            elif self.down_sample_method == 'voxel':
+                #todo voxel dowm sample
+                if self.voxel_choice == 'mean':  #! 太慢了,弃用
+                    current_point_ds, current_point_ds_index = self.down_sample(current_point, self.voxel_size)
+                    last_point_ds, last_point_ds_index = self.down_sample(last_point, self.voxel_size)
                     # start2=time.time()
-                    flow_gt_ds=[np.mean(flow_gt[current_point_ds_index[i]],axis=0) for i in range(len(current_point_ds_index))]
+                    flow_gt_ds = [np.mean(flow_gt[current_point_ds_index[i]], axis=0) for i in range(len(current_point_ds_index))]
                     # print(f'flow_gt:{time.time()-start2}')
-                    inverse_current=[]
-                    inverse_last=[]
-                    allpoints_current=[]
-                    allpoints_last=[]
+                    inverse_current = []
+                    inverse_last = []
+                    allpoints_current = []
+                    allpoints_last = []
 
-                elif self.voxel_choice=='choice_one':
-                    changed_current_point=current_point.copy()
-                    changed_last_point=last_point.copy()
+                elif self.voxel_choice == 'choice_one':
+                    changed_current_point = current_point.copy()
+                    changed_last_point = last_point.copy()
 
-                    min_current=np.min(changed_current_point,axis=0,keepdims=True)
-                    min_last=np.min(changed_last_point,axis=0,keepdims=True)
-                    changed_current_point-=min_current
-                    changed_last_point-=min_last
+                    min_current = np.min(changed_current_point, axis=0, keepdims=True)
+                    min_last = np.min(changed_last_point, axis=0, keepdims=True)
+                    changed_current_point -= min_current
+                    changed_last_point -= min_last
 
                     # all_coords_current=np.floor(changed_current_point/self.voxel_size).astype(np.int32)
 
-                    coords_current,indices_current,inverse_current=sparse_quantize(changed_current_point,self.voxel_size,return_index=True,return_inverse=True)
-                    coords_last,indices_last,inverse_last=sparse_quantize(changed_last_point,self.voxel_size,return_index=True,return_inverse=True)
+                    coords_current, indices_current, inverse_current = sparse_quantize(changed_current_point, self.voxel_size, return_index=True, return_inverse=True)
+                    coords_last, indices_last, inverse_last = sparse_quantize(changed_last_point, self.voxel_size, return_index=True, return_inverse=True)
 
-                    allpoints_current=current_point
-                    allpoints_last=last_point
+                    allpoints_current = current_point
+                    allpoints_last = last_point
                     # assert (coords_current not in all_coords_current),'坐标不匹配'
 
-                    current_point_ds=current_point[indices_current]
-                    last_point_ds=last_point[indices_last]
-                    flow_gt_ds=flow_gt[indices_current]
+                    current_point_ds = current_point[indices_current]
+                    last_point_ds = last_point[indices_last]
+                    flow_gt_ds = flow_gt[indices_current]
+
                     if debug:
-                        print(f"debug:{debug}")
+                        # print(f"debug:{debug}")
                         try:
-                            current_sampled_indexs=np.random.choice(current_point_ds.shape[0],size=self.num_points,replace=False,p=None)
-                            last_sampled_indexs=np.random.choice(last_point_ds.shape[0],size=self.num_points,replace=False,p=None)
+                            current_sampled_indexs = np.random.choice(current_point_ds.shape[0], size=self.num_points, replace=False, p=None)
+                            last_sampled_indexs = np.random.choice(last_point_ds.shape[0], size=self.num_points, replace=False, p=None)
                         except ValueError:
-                            current_sampled_indexs=np.random.choice(current_point_ds.shape[0],size=self.num_points,replace=True,p=None)
-                            last_sampled_indexs=np.random.choice(last_point_ds.shape[0],size=self.num_points,replace=True,p=None)
-                        flow_sampled_indexs=current_sampled_indexs 
+                            current_sampled_indexs = np.random.choice(current_point_ds.shape[0], size=self.num_points, replace=True, p=None)
+                            last_sampled_indexs = np.random.choice(last_point_ds.shape[0], size=self.num_points, replace=True, p=None)
+                        flow_sampled_indexs = current_sampled_indexs
 
-                        current_point_ds=current_point_ds[current_sampled_indexs]
-                        last_point_ds=last_point_ds[last_sampled_indexs]
-                        flow_gt_ds=flow_gt_ds[flow_sampled_indexs]
+                        current_point_ds = current_point_ds[current_sampled_indexs]
+                        last_point_ds = last_point_ds[last_sampled_indexs]
+                        flow_gt_ds = flow_gt_ds[flow_sampled_indexs]
 
-            
+                        inverse_current = []
+                        inverse_last = []
+                        allpoints_current = []
+                        allpoints_last = []
 
         else:
             print('num_points<0,不进行下采样,经过实验不行，out of memory')
-            current_point_ds=current_point
-            last_point_ds=last_point
-            flow_gt_ds=flow_gt
+            current_point_ds = current_point
+            last_point_ds = last_point
+            flow_gt_ds = flow_gt
 
-            inverse_current=[]
-            inverse_last=[]
-            allpoints_current=[]
-            allpoints_last=[]
+            inverse_current = []
+            inverse_last = []
+            allpoints_current = []
+            allpoints_last = []
 
+        return current_point_ds, last_point_ds, flow_gt_ds, inverse_current, allpoints_current, allpoints_last
 
-
-        return current_point_ds,last_point_ds,flow_gt_ds,inverse_current,allpoints_current,allpoints_last
-    
     def __repr__(self):
         format_string = self.__class__.__name__ + '\n(data_process_args: \n'
         format_string += '\tdown_sample_method: {}\n'.format(self.down_sample_method)
         format_string += '\tnum_points: {}\n'.format(self.num_points)
         format_string += ')'
         return format_string
-    

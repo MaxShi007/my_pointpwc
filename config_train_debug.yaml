@@ -1,7 +1,7 @@
 gpu: "0"
 multi_gpu: '0,1,2,3' # "0,1,2,3" # null
 
-model_name: debug_voxeldownsample_then_randomdownsample_voxelsize0.1_nocollater_nomyloss
+model_name: debug
 
 full: False 
 
@@ -53,11 +53,3 @@ aug_pc2:
 
 # miscalleneous
 workers: 16 #16
-
-
-
-
-
-
-
-
