@@ -42,7 +42,7 @@ def main():
     '''CREATE DIR'''
     experiment_dir = Path('./experiment/')
     experiment_dir.mkdir(exist_ok=True)
-    file_dir = Path(str(experiment_dir) + '/semantic_kitti_non_ground_%s-' % args.model_name + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')))
+    file_dir = Path(str(experiment_dir) + '/Flow_Dataset_1_nonground_4dmosposes_%s-' % args.model_name + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')))
     file_dir.mkdir(exist_ok=True)
     checkpoints_dir = file_dir.joinpath('checkpoints/')
     checkpoints_dir.mkdir(exist_ok=True)
@@ -78,8 +78,8 @@ def main():
         val_dataset = datasets.SemanticKitti(train=False, transform=transform, num_points=args.num_points, data_root=args.data_root)
 
         collate = None
-        # if args.data_process['DOWN_SAMPLE_METHOD'] == 'voxel':#!为了debug先vexel再random我把这里注释了
-        # collate = datasets.Collater(args.data_process)
+        if args.data_process['DOWN_SAMPLE_METHOD'] == 'voxel':
+            collate = datasets.Collater(args.data_process)
 
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=True, collate_fn=collate)
         logger.info('train_dataset: ' + str(train_dataset))
@@ -140,13 +140,13 @@ def main():
         total_seen = 0
         optimizer.zero_grad()
 
-        #train one epoch
+        # train one epoch
         for i, data in tqdm(enumerate(train_loader, 0), total=len(train_loader), smoothing=0.9):
             if args.data_process['DOWN_SAMPLE_METHOD'] == 'random':
                 pos1, pos2, norm1, norm2, flow, _, _, _, _ = data  # list6,[20,N,3]
             elif args.data_process['DOWN_SAMPLE_METHOD'] == 'voxel':
-                pos1, pos2, norm1, norm2, flow, _, _, _, _ = data
-                # pos1, pos2, norm1, norm2, flow, _, pos1_mask, pos2_mask, norm1_mask, norm2_mask, flow_mask, _, _, _ = data  #!为了debug先vexel再random我把这里注释了
+                # pos1, pos2, norm1, norm2, flow, _, _, _, _ = data
+                pos1, pos2, norm1, norm2, flow, _, pos1_mask, pos2_mask, norm1_mask, norm2_mask, flow_mask, _, _, _ = data
 
             #move to cuda
             pos1 = pos1.cuda()
@@ -160,8 +160,8 @@ def main():
             if args.data_process['DOWN_SAMPLE_METHOD'] == 'random':
                 loss = multiScaleLoss(pred_flows, flow, fps_pc1_idxs)
             elif args.data_process['DOWN_SAMPLE_METHOD'] == 'voxel':
-                loss = multiScaleLoss(pred_flows, flow, fps_pc1_idxs)
-                # loss = my_mutil_scale_loss(pred_flows, flow, fps_pc1_idxs, pos1_mask, flow_mask)  #!为了debug先vexel再random我把这里注释了，上面的打开了
+                # loss = multiScaleLoss(pred_flows, flow, fps_pc1_idxs)
+                loss = my_mutil_scale_loss(pred_flows, flow, fps_pc1_idxs, pos1_mask, flow_mask)
 
             history['loss'].append(loss.cpu().data.numpy())
             loss.backward()
@@ -203,6 +203,24 @@ def main():
         writer.add_scalar('best_epe', best_epe, epoch)
 
 
+def calculate_epe3d(pred_flows, flow, pred_flows_mask, flow_mask):
+    '''
+    pred_flows: [L,B,3,N]
+    flow: [B,N,3]
+    pred_flows_mask: [B,N]
+    flow_mask: [B,N]
+    '''
+    pred_flow = pred_flows[0].permute(0, 2, 1)  #B,N,3
+    pred_flows_mask = torch.as_tensor(pred_flows_mask).bool().cuda()
+    masked_pred_flow = pred_flow[pred_flows_mask]
+    masked_flow = flow[pred_flows_mask]
+
+    assert masked_flow.shape == masked_pred_flow.shape
+
+    epe3d = torch.norm(masked_pred_flow - masked_flow, dim=1).mean()
+    return epe3d
+
+
 def eval_sceneflow(model, loader, args):
 
     metrics = defaultdict(lambda: list())
@@ -210,9 +228,8 @@ def eval_sceneflow(model, loader, args):
         if args.data_process['DOWN_SAMPLE_METHOD'] == 'random':
             pos1, pos2, norm1, norm2, flow, _, _, _, _ = data
         elif args.data_process['DOWN_SAMPLE_METHOD'] == 'voxel':
-            pos1, pos2, norm1, norm2, flow, _, _, _, _ = data
-            # pos1, pos2, norm1, norm2, flow, _, pos1_mask, pos2_mask, norm1_mask, norm2_mask, flow_mask, _, _, _ = data  #!为了debug先vexel再random我把这里注释了
-
+            # pos1, pos2, norm1, norm2, flow, _, _, _, _ = data
+            pos1, pos2, norm1, norm2, flow, _, pos1_mask, pos2_mask, norm1_mask, norm2_mask, flow_mask, _, _, _ = data
         #move to cuda
         pos1 = pos1.cuda()
         pos2 = pos2.cuda()
@@ -226,10 +243,11 @@ def eval_sceneflow(model, loader, args):
             if args.data_process['DOWN_SAMPLE_METHOD'] == 'random':
                 eval_loss = multiScaleLoss(pred_flows, flow, fps_pc1_idxs)
             elif args.data_process['DOWN_SAMPLE_METHOD'] == 'voxel':
-                eval_loss = multiScaleLoss(pred_flows, flow, fps_pc1_idxs)
-                # eval_loss = my_mutil_scale_loss(pred_flows, flow, fps_pc1_idxs, pos1_mask, flow_mask)#!为了debug先vexel再random我把这里注释了，上面的打开了
+                # eval_loss = multiScaleLoss(pred_flows, flow, fps_pc1_idxs)
+                eval_loss = my_mutil_scale_loss(pred_flows, flow, fps_pc1_idxs, pos1_mask, flow_mask)
 
-            epe3d = torch.norm(pred_flows[0].permute(0, 2, 1) - flow, dim=2).mean()  # B,N,3
+            # epe3d = torch.norm(pred_flows[0].permute(0, 2, 1) - flow, dim=2).mean()  # B,N,3
+            epe3d = calculate_epe3d(pred_flows, flow, pos1_mask, flow_mask)
 
         metrics['epe3d_loss'].append(epe3d.cpu().data.numpy())
         metrics['eval_loss'].append(eval_loss.cpu().data.numpy())

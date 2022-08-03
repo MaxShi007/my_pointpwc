@@ -342,7 +342,7 @@ class Augmentation(object):
 
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-debug = True
+debug = False
 print("*" * 50)
 print("DEBUG:", debug)
 print("*" * 50)

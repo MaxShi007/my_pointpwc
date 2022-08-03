@@ -55,9 +55,9 @@ class SemanticKitti(Dataset):
 
     def make_dataset(self, use_all):
         paths = []
-        train_sequences = ['00', '01', '02', '03', '04', '05', '06', '07', '09', '10']  # ,'30', '31', '32', '33', '34', '40'
+        train_sequences = ['00', '01', '02', '03', '04', '05', '06', '07', '09', '10', '30', '31', '32', '33', '34', '40']  # ,'30', '31', '32', '33', '34', '40'
         # train_sequences = ['04']
-        val_sequences = ['08']  # ,'35', '36', '37', '38', '39', '41'
+        val_sequences = ['08', '35', '36', '37', '38', '39', '41']  # ,'35', '36', '37', '38', '39', '41'
 
         if self.test:
             print(f"test: {self.test}")
@@ -130,7 +130,7 @@ class Collater():
             norm2_mask[i, :len(norm2[i])] = 1
             flow_mask[i, :len(flow[i])] = 1
 
-            # todo sample padding
+            # sample padding
             if self.pad_method == 'sample':
                 diff_count_pos1 = max_pos1_len - len(pos1[i])
                 diff_count_pos2 = max_pos2_len - len(pos2[i])

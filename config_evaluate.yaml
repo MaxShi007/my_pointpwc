@@ -14,7 +14,7 @@ last_relu: False
 allow_less_points: False
 
 # general args
-batch_size: 1
+batch_size: 1 # if down sampling ==voxel batch_size must be 1 for eval ,because multiple size will use pad in collecter
 pretrain: PointConv_112_0.0533.pth
 dim: 3
 num_points: 18776 # 31000 # 18776
@@ -27,7 +27,7 @@ data_root: /share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_poi
 data_process:
   DEPTH_THRESHOLD: 35.
   NO_CORR: True
-  DOWN_SAMPLE_METHOD: voxel # voxel # random
+  DOWN_SAMPLE_METHOD: voxel # voxel # random 
   VOXEL_CHOICE: choice_one # mean # choice_one
   VOXEL_SIZE: 0.2
   PAD_METHOD: sample # zero # sample

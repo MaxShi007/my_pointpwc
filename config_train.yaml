@@ -1,7 +1,7 @@
 gpu: "0"
 multi_gpu: '0,1,2,3' # "0,1,2,3" # null
 
-model_name: debug_voxeldownsample_then_randomdownsample_voxelsize0.1_nocollater_nomyloss
+model_name: voxelsize0.3_choiceone_pad0
 
 full: False 
 
@@ -10,7 +10,7 @@ last_relu: False
 allow_less_points: False
 
 # general args
-batch_size: 24 # 6 single gpu for 18776 num_min_point
+batch_size: 8 # 6 single gpu for 18776 num_min_point
 epochs: 800
 learning_rate: 0.001
 
@@ -19,22 +19,22 @@ pretrain: null #./experiment/PointConvFlyingthings3d-2019-11-05_12-58/checkpoint
 weight_decay: 0.0001
 
 dim: 3
-num_points: 18776 # 8192 16384 32768 # 18776 this is the min_num_point in semanticKitti non ground 14095 is the min_num_point in kittiroad
+num_points: 32768 # 8192 16384 32768 # 18776 this is the min_num_point in semanticKitti non ground 14095 is the min_num_point in kittiroad
 
 DEVICE: cuda
 
 evaluate: False
 
 dataset: SemanticKitti # SemanticKitti #FlyingThings3DSubset # KITTI SemanticKitti
-data_root:  /share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point # /share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point #/root/sgb_repo/PointPWC/SAVE_PATH/ # ./flyingthings3d
+data_root:  /share/sgb/semantic_kitti/Flow_Dataset_1_nonground_4dmosposes # /share/sgb/semantic_kitti/SemanticKitti_Flow_Dataset_1_non_ground_point #/root/sgb_repo/PointPWC/SAVE_PATH/ # ./flyingthings3d
 
 data_process:
   DEPTH_THRESHOLD: 35.
   NO_CORR: True
   DOWN_SAMPLE_METHOD: voxel # voxel # random
   VOXEL_CHOICE: choice_one # mean # choice_one
-  VOXEL_SIZE: 0.1
-  PAD_METHOD: sample # zero # sample
+  VOXEL_SIZE: 0.3
+  PAD_METHOD: zero # zero # sample
 
 # data augmentation
 aug_together:
