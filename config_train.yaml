@@ -1,7 +1,7 @@
 gpu: "0"
 multi_gpu: '0,1,2,3' # "0,1,2,3" # null
 
-model_name: voxelsize0.3_choiceone_pad0
+model_name: randomds14095_kitti+kittiroadtrain_08val
 
 full: False 
 
@@ -10,7 +10,7 @@ last_relu: False
 allow_less_points: False
 
 # general args
-batch_size: 8 # 6 single gpu for 18776 num_min_point
+batch_size: 28 # 6 single gpu for 18776 num_min_point
 epochs: 800
 learning_rate: 0.001
 
@@ -19,7 +19,7 @@ pretrain: null #./experiment/PointConvFlyingthings3d-2019-11-05_12-58/checkpoint
 weight_decay: 0.0001
 
 dim: 3
-num_points: 32768 # 8192 16384 32768 # 18776 this is the min_num_point in semanticKitti non ground 14095 is the min_num_point in kittiroad
+num_points: 14095 # 8192 16384 32768 # 18776 this is the min_num_point in semanticKitti non ground 14095 is the min_num_point in kittiroad
 
 DEVICE: cuda
 
@@ -31,7 +31,7 @@ data_root:  /share/sgb/semantic_kitti/Flow_Dataset_1_nonground_4dmosposes # /sha
 data_process:
   DEPTH_THRESHOLD: 35.
   NO_CORR: True
-  DOWN_SAMPLE_METHOD: voxel # voxel # random
+  DOWN_SAMPLE_METHOD: random # voxel # random
   VOXEL_CHOICE: choice_one # mean # choice_one
   VOXEL_SIZE: 0.3
   PAD_METHOD: zero # zero # sample
@@ -52,7 +52,7 @@ aug_pc2:
   jitter_clip: 0.00
 
 # miscalleneous
-workers: 16 #16
+workers: 32 #16
 
 
 

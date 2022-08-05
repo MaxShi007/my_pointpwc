@@ -242,12 +242,11 @@ def eval_sceneflow(model, loader, args):
 
             if args.data_process['DOWN_SAMPLE_METHOD'] == 'random':
                 eval_loss = multiScaleLoss(pred_flows, flow, fps_pc1_idxs)
+                epe3d = torch.norm(pred_flows[0].permute(0, 2, 1) - flow, dim=2).mean()  # B,N,3
             elif args.data_process['DOWN_SAMPLE_METHOD'] == 'voxel':
                 # eval_loss = multiScaleLoss(pred_flows, flow, fps_pc1_idxs)
                 eval_loss = my_mutil_scale_loss(pred_flows, flow, fps_pc1_idxs, pos1_mask, flow_mask)
-
-            # epe3d = torch.norm(pred_flows[0].permute(0, 2, 1) - flow, dim=2).mean()  # B,N,3
-            epe3d = calculate_epe3d(pred_flows, flow, pos1_mask, flow_mask)
+                epe3d = calculate_epe3d(pred_flows, flow, pos1_mask, flow_mask)
 
         metrics['epe3d_loss'].append(epe3d.cpu().data.numpy())
         metrics['eval_loss'].append(eval_loss.cpu().data.numpy())
